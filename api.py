@@ -57,7 +57,7 @@ def handle_dialog(req, res):
             ]
         }
 
-        res['response']['text'] = 'Привет! Купи слона!'
+        res['response']['text'] = 'Привет! Купи раба!'
         res['response']['buttons'] = get_suggests(user_id)
         return
 
@@ -102,3 +102,6 @@ def get_suggests(user_id):
         })
 
     return suggests
+
+if __name__ == '__main__':
+    app.run()
