@@ -14,7 +14,6 @@ app = Flask(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
 # Хранилище данных о сессиях.
-sessionStorage = {}
 
 # Задаем параметры приложения Flask.
 @app.route("/", methods=['POST'])
@@ -49,20 +48,45 @@ def handle_dialog(req, res):
         # Это новый пользователь.
         # Инициализируем сессию и поприветствуем его.
 
-        sessionStorage[user_id] = {
-            'suggests': [
-                "Не хочу.",
-                "Не буду.",
-                "Уйди!",
-                "Отстань!",
-            ]
-        }
-
         res['response']['text'] = 'Привет! Это игра Подземелья и драконы, чтобы узнать правила, скажите раскажи правила. ' \
-                                  'Выберетие одного из четырёх персонажей для начала путишествия.' \
+                                  'Назовите имя и выберетие одного из четырёх персонажей для начала путишествия.' \
                                   'Персонажи: Эльф, маг, варвар, рыцарь. Для просмотра способномтей скажите скажи список способностей'
-        res['response']['buttons'] = get_suggests(user_id)
         return
+
+    try:  # на всякий случай)
+        if list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['закончить', 'диалог'] or \
+                list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['останови', 'диалог'] or \
+                    list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['завершить', 'диалог']:
+            res['response'][
+                'text'] = 'Пока! Захочешь повторить магическое путешествие, я всегда тут!'
+            res['response'][
+                'tts'] = 'Пока! Захочешь повторить магическое путешествие, я всегда тут!'
+            res['response']['end_session'] = True
+            return
+    except Exception:
+        pass
+    try:
+        # что ты умеешь? - обязательный вопрос в навыке Алисы
+        if list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['что', 'ты', 'умеешь'] or \
+                list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['помощь']:
+            res['response']['text'] = 'Я умею запускать игру Подземелья и Драконы, где пользователь сталкивается с разными препятствиями ' + \
+                                        'в эту игру можно играть даже одному, потому что ведущий - это Алиса'
+            return
+    except Exception:
+        pass
+    try:
+        # правила
+        if list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['расскажи', 'правила'] or \
+                list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['какие', 'правила'] or \
+                    list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['правила']:
+            res['response']['text'] = 'В этой игре ты выбираешь одного из четырёх персонажей, эльф, маг, варвар, рыцарь ' + \
+                                        'каждый ход ты сталкиваешься с событиями, они могут как прибавлять здоровье, так и отнимать' \
+                                        'при каждом событии надо бросать кубик щита, он определяет, будешь ли ты наносить урон или получать хил' \
+                                        'кубик щита в деапозоне от одного до двадцати' \
+                                        'если вы пробили щит врага, то вы бросаете кубик урона, кубик урона для каждого персонажа разный'
+            return
+    except Exception:
+        pass
 
     # Обрабатываем ответ пользователя.
     if req['request']['original_utterance'].lower() in [
@@ -79,32 +103,8 @@ def handle_dialog(req, res):
     res['response']['text'] = 'Все говорят "%s", а ты купи раба!' % (
         req['request']['original_utterance']
     )
-    res['response']['buttons'] = get_suggests(user_id)
 
 # Функция возвращает две подсказки для ответа.
-def get_suggests(user_id):
-    session = sessionStorage[user_id]
-
-    # Выбираем две первые подсказки из массива.
-    suggests = [
-        {'title': suggest, 'hide': True}
-        for suggest in session['suggests'][:2]
-    ]
-
-    # Убираем первую подсказку, чтобы подсказки менялись каждый раз.
-    session['suggests'] = session['suggests'][1:]
-    sessionStorage[user_id] = session
-
-    # Если осталась только одна подсказка, предлагаем подсказку
-    # со ссылкой на Яндекс.Маркет.
-    if len(suggests) < 2:
-        suggests.append({
-            "title": "Ладно",
-            "url": "https://market.yandex.ru/search?text=раб",
-            "hide": True
-        })
-
-    return suggests
 
 if __name__ == '__main__':
     app.run()
