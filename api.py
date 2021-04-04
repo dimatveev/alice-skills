@@ -11,6 +11,8 @@ from flask import Flask, request
 app = Flask(__name__)
 
 etap = 1
+name = 'ОШИБКА'
+state = {}
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -43,6 +45,8 @@ def main():
 # Функция для непосредственной обработки диалога.
 def handle_dialog(req, res):
     global etap
+    global name
+    global state
     user_id = req['session']['user_id']
 
     if req['session']['new']:
@@ -123,6 +127,21 @@ def handle_dialog(req, res):
             return
     except Exception:
         pass
+
+    try:
+        # что ты умеешь? - обязательный вопрос в навыке Алисы
+        if list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['профиль'] or \
+                list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['пользователь']:
+            res['response']['text'] = f'Имя:{name}\n' \
+                                      f'Герой:{state["role"]}\n' \
+                                      f'Хп:{state["hp"]}\n' \
+                                      f'Щит:{state["shield"]}\n' \
+                                      f'Минимальная атака:{state["mina"]}\n' \
+                                      f'Максимальная атака:{state["maxa"]}'
+            return
+    except Exception:
+        pass
+
     try:
         # правила
         if list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['расскажи', 'правила'] or \
@@ -137,49 +156,65 @@ def handle_dialog(req, res):
     except Exception:
         pass
 
-    if etap == 3:
+    if etap == 4:
         if req["request"]["original_utterance"].lower() in ["продолжить", "дальше"]:
-            res["response"]["text"] = "Хорошо! сейчас начнётся приключение, не забывайте говорить 'брось кубики',состояние игрока можно проверить командой профиль "
+            res["response"]["text"] = "Хорошо! сейчас начнётся приключение, не забывайте говорить 'брось кубики',состояние игрока можно проверить командой профиль \n" \
+                                      "Также вы можете узнать профиль игрока, сказав 'профиль' "
         else:
             res["response"]["text"] = "Напоминаю, чтобы продолжить скажите 'продолжить'"
-    #Профиль: имя
+    #Профиль: res["response"]["text"] =
     #хп
     #роль
     #кол-во пройденых этапов
     #
 
-    if etap == 2:
+    elif etap == 3:
         role = req["request"]["original_utterance"]
+        state["role"] = role
         if role == "эльф":
             res["response"]["text"] = "Отлично! вы меткий эльф из лесов. \n Чтобы пройти дальше, скажите 'продолжить'"
             etap += 1
-            #Таблица = таблица эльфа
+            state["hp"] = 12
+            state["shield"] = 17
+            state["mina"] = 2
+            state["maxa"] = 6
         elif role == "рыцарь":
             res["response"]["text"] = "Отлично! вы бесстрашный воин королевства. \n Чтобы пройти дальше, скажите 'продолжить'"
             etap += 1
-            #Таблица = таблица рыцаря
+            state["hp"] = 13
+            state["shield"] = 17
+            state["mina"] = 2
+            state["maxa"] = 5
         elif role == "маг":
             res["response"]["text"] = "Отлично! вы мудрый чародей башни. \n Чтобы пройти дальше, скажите 'продолжить'"
             etap += 1
-            #Таблица = таблица мага
+            state["hp"] = 11
+            state["shield"] = 18
+            state["mina"] = 2
+            state["maxa"] = 6
         elif role == "варвар":
             res["response"]["text"] = "Отлично! вы грозный варвар из гор. \n Чтобы пройти дальше, скажите 'продолжить'"
             etap += 1
-            #Таблица = таблица варвара
+            state["hp"] = 14
+            state["shield"] = 16
+            state["mina"] = 2
+            state["maxa"] = 7
         else:
             res["response"]["text"] = "Повторите роль ещё раз, напоминаю, у вас всего четыре варианта: эльф, маг, рыцарь или варвар"
 
-    if etap == 1:
-        name = req["request"]["original_utterance"]
-        res["response"]["text"] = f"Супер! Правильно ли я поняла, что вас зовут {name}?"
+    elif etap == 2:
         if req["request"]["original_utterance"].lower() in ["да", "правильно"]:
             res["response"]["text"] = f'Приятно познокомиться, {name}. Теперь назовите персонажа, Для просмотра способномтей определённого персонажа' \
                           ' скажите "какие способности у ..."'
             etap += 1
         elif req["request"]["original_utterance"].lower() in ["нет", "не правильно", "заново"]:
             res["response"]["text"] = "Повторите имя, пожалуйста"
+            etap -= 1
 
-
+    elif etap == 1:
+        name = req["request"]["original_utterance"]
+        res["response"]["text"] = f"Супер! Правильно ли я поняла, что вас зовут {name}?"
+        etap += 1
     # Обрабатываем ответ пользователя.
 #    if req['request']['original_utterance'].lower() in [
 #        'ладно',
