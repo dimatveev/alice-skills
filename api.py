@@ -10,7 +10,7 @@ import logging
 from flask import Flask, request
 app = Flask(__name__)
 
-etap = 1
+etap = 'askname'
 name = 'ОШИБКА'
 state = {}
 
@@ -156,10 +156,18 @@ def handle_dialog(req, res):
     except Exception:
         pass
 
-    if etap == 4:
+
+
+    if etap == 'first':
+        if req["request"]["original_utterance"].lower() in ["начать приключение", "начни приключение"]:
+            res["response"]["text"] = "ок"
+
+    elif etap == 'begin':
         if req["request"]["original_utterance"].lower() in ["продолжить", "дальше"]:
-            res["response"]["text"] = "Хорошо! сейчас начнётся приключение, не забывайте говорить 'брось кубики',состояние игрока можно проверить командой профиль \n" \
+            res["response"]["text"] = "Хорошо! Чтобы отправиться в путь скажите 'начать приключение', не забывайте говорить " \
+                                      "'брось кубики',состояние игрока можно проверить командой профиль \n" \
                                       "Также вы можете узнать профиль игрока, сказав 'профиль' "
+            etap = 'first'
         else:
             res["response"]["text"] = "Напоминаю, чтобы продолжить скажите 'продолжить'"
     #Профиль: res["response"]["text"] =
@@ -168,33 +176,33 @@ def handle_dialog(req, res):
     #кол-во пройденых этапов
     #
 
-    elif etap == 3:
+    elif etap == 'askrole':
         role = req["request"]["original_utterance"]
         state["role"] = role
         if role == "эльф":
             res["response"]["text"] = "Отлично! вы меткий эльф из лесов. \n Чтобы пройти дальше, скажите 'продолжить'"
-            etap += 1
+            etap = 'begin'
             state["hp"] = 12
             state["shield"] = 17
             state["mina"] = 2
             state["maxa"] = 6
         elif role == "рыцарь":
             res["response"]["text"] = "Отлично! вы бесстрашный воин королевства. \n Чтобы пройти дальше, скажите 'продолжить'"
-            etap += 1
+            etap = 'begin'
             state["hp"] = 13
             state["shield"] = 17
             state["mina"] = 2
             state["maxa"] = 5
         elif role == "маг":
             res["response"]["text"] = "Отлично! вы мудрый чародей башни. \n Чтобы пройти дальше, скажите 'продолжить'"
-            etap += 1
+            etap = 'begin'
             state["hp"] = 11
             state["shield"] = 18
             state["mina"] = 2
             state["maxa"] = 6
         elif role == "варвар":
             res["response"]["text"] = "Отлично! вы грозный варвар из гор. \n Чтобы пройти дальше, скажите 'продолжить'"
-            etap += 1
+            etap = 'begin'
             state["hp"] = 14
             state["shield"] = 16
             state["mina"] = 2
@@ -202,19 +210,19 @@ def handle_dialog(req, res):
         else:
             res["response"]["text"] = "Повторите роль ещё раз, напоминаю, у вас всего четыре варианта: эльф, маг, рыцарь или варвар"
 
-    elif etap == 2:
+    elif etap == 'checkname':
         if req["request"]["original_utterance"].lower() in ["да", "правильно"]:
             res["response"]["text"] = f'Приятно познокомиться, {name}. Теперь назовите персонажа, Для просмотра способномтей определённого персонажа' \
                           ' скажите "какие способности у ..."'
-            etap += 1
+            etap = 'askrole'
         elif req["request"]["original_utterance"].lower() in ["нет", "не правильно", "заново"]:
             res["response"]["text"] = "Повторите имя, пожалуйста"
-            etap -= 1
+            etap = 'askname'
 
-    elif etap == 1:
+    elif etap == 'askname':
         name = req["request"]["original_utterance"]
         res["response"]["text"] = f"Супер! Правильно ли я поняла, что вас зовут {name}?"
-        etap += 1
+        etap = 'checkname'
     # Обрабатываем ответ пользователя.
 #    if req['request']['original_utterance'].lower() in [
 #        'ладно',
