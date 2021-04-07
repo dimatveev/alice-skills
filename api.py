@@ -1,18 +1,20 @@
 # coding: utf-8
 # Импортирует поддержку UTF-8.
 from __future__ import unicode_literals
-
+from data import  db_session
 # Импортируем модули для работы с JSON и логами.
 import json
 import logging
-
+from flask_ngrok import run_with_ngrok
 # Импортируем подмодули Flask для запуска веб-сервиса.
 from flask import Flask, request
 app = Flask(__name__)
+#run_with_ngrok(app)
 
 etap = 'askname'
-name = 'ОШИБКА'
 state = {}
+fights = 0
+#elf = Elf()
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -45,8 +47,9 @@ def main():
 # Функция для непосредственной обработки диалога.
 def handle_dialog(req, res):
     global etap
-    global name
     global state
+    global fights
+    #global elf
     user_id = req['session']['user_id']
 
     if req['session']['new']:
@@ -132,7 +135,7 @@ def handle_dialog(req, res):
         # что ты умеешь? - обязательный вопрос в навыке Алисы
         if list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['профиль'] or \
                 list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['пользователь']:
-            res['response']['text'] = f'Имя:{name}\n' \
+            res['response']['text'] = f'Имя:{state["name"]}\n' \
                                       f'Герой:{state["role"]}\n' \
                                       f'Хп:{state["hp"]}\n' \
                                       f'Щит:{state["shield"]}\n' \
@@ -158,16 +161,20 @@ def handle_dialog(req, res):
 
 
 
-    if etap == 'first':
-        if req["request"]["original_utterance"].lower() in ["начать приключение", "начни приключение"]:
-            res["response"]["text"] = "ок"
+    if etap == 'fight':
+        if fights == 0:
+            if req["request"]["original_utterance"].lower() in ["начать приключение", "начни приключение"]:
+                res["response"]["text"] = f"Вы наткнулись на врага"
+       #         res["response"]["text"] = f"Вы наткнулись на {elf.enemy}"
+            else:
+                res["response"]["text"] = "Напоминаю, чтобы начать скажите 'начать приключение'"
 
     elif etap == 'begin':
         if req["request"]["original_utterance"].lower() in ["продолжить", "дальше"]:
             res["response"]["text"] = "Хорошо! Чтобы отправиться в путь скажите 'начать приключение', не забывайте говорить " \
                                       "'брось кубики',состояние игрока можно проверить командой профиль \n" \
                                       "Также вы можете узнать профиль игрока, сказав 'профиль' "
-            etap = 'first'
+            etap = 'fight'
         else:
             res["response"]["text"] = "Напоминаю, чтобы продолжить скажите 'продолжить'"
     #Профиль: res["response"]["text"] =
@@ -212,7 +219,7 @@ def handle_dialog(req, res):
 
     elif etap == 'checkname':
         if req["request"]["original_utterance"].lower() in ["да", "правильно"]:
-            res["response"]["text"] = f'Приятно познокомиться, {name}. Теперь назовите персонажа, Для просмотра способномтей определённого персонажа' \
+            res["response"]["text"] = f'Приятно познокомиться, {state["name"]}. Теперь назовите персонажа, Для просмотра способномтей определённого персонажа' \
                           ' скажите "какие способности у ..."'
             etap = 'askrole'
         elif req["request"]["original_utterance"].lower() in ["нет", "не правильно", "заново"]:
@@ -220,8 +227,8 @@ def handle_dialog(req, res):
             etap = 'askname'
 
     elif etap == 'askname':
-        name = req["request"]["original_utterance"]
-        res["response"]["text"] = f"Супер! Правильно ли я поняла, что вас зовут {name}?"
+        state["name"] = req["request"]["original_utterance"]
+        res["response"]["text"] = f'Супер! Правильно ли я поняла, что вас зовут {state["name"]}?'
         etap = 'checkname'
     # Обрабатываем ответ пользователя.
 #    if req['request']['original_utterance'].lower() in [
