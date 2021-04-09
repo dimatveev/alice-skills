@@ -1,52 +1,32 @@
 import sqlalchemy as sa
+import sqlalchemy.orm as orm
+from sqlalchemy.orm import Session
+import sqlalchemy.ext.declarative as dec
 
-class Elf():
-    id = sa.Column(sa.Integer, primary_key=True, autoincrement=True)
-    enemy = sa.Column(sa.String, nullable=True)
-    enemyhp = sa.Column(sa.Integer, nullable=True)
-    shield = sa.Column(sa.Integer, nullable=True)
-    minatack = sa.Column(sa.Integer, nullable=True)
-    maxatack = sa.Column(sa.Integer, nullable=True)
-    firstkill = sa.Column(sa.String, nullable=True)
-    secondkill = sa.Column(sa.String, nullable=True)
-    thirdkill = sa.Column(sa.String, nullable=True)
-    number = sa.Column(sa.Integer, nullable=True)
+SqlAlchemyBase = dec.declarative_base()
+
+__factory = None
 
 
-class Knight():
-    id = sa.Column(sa.Integer, primary_key=True, autoincrement=True)
-    enemy = sa.Column(sa.String, nullable=True)
-    enemyhp = sa.Column(sa.Integer, nullable=True)
-    shield = sa.Column(sa.Integer, nullable=True)
-    minatack = sa.Column(sa.Integer, nullable=True)
-    maxatack = sa.Column(sa.Integer, nullable=True)
-    firstkill = sa.Column(sa.String, nullable=True)
-    secondkill = sa.Column(sa.String, nullable=True)
-    thirdkill = sa.Column(sa.String, nullable=True)
-    number = sa.Column(sa.Integer, nullable=True)
+def global_init(db_file):
+    global __factory
 
+    if __factory:
+        return
 
-class Wizard():
-    id = sa.Column(sa.Integer, primary_key=True, autoincrement=True)
-    enemy = sa.Column(sa.String, nullable=True)
-    enemyhp = sa.Column(sa.Integer, nullable=True)
-    shield = sa.Column(sa.Integer, nullable=True)
-    minatack = sa.Column(sa.Integer, nullable=True)
-    maxatack = sa.Column(sa.Integer, nullable=True)
-    firstkill = sa.Column(sa.String, nullable=True)
-    secondkill = sa.Column(sa.String, nullable=True)
-    thirdkill = sa.Column(sa.String, nullable=True)
-    number = sa.Column(sa.Integer, nullable=True)
+    if not db_file or not db_file.strip():
+        raise Exception("Необходимо указать файл базы данных.")
 
+    conn_str = f'sqlite:///{db_file.strip()}?check_same_thread=False'
+    print(f"Подключение к базе данных по адресу {conn_str}")
 
-class Barbarian():
-    id = sa.Column(sa.Integer, primary_key=True, autoincrement=True)
-    enemy = sa.Column(sa.String, nullable=True)
-    enemyhp = sa.Column(sa.Integer, nullable=True)
-    shield = sa.Column(sa.Integer, nullable=True)
-    minatack = sa.Column(sa.Integer, nullable=True)
-    maxatack = sa.Column(sa.Integer, nullable=True)
-    firstkill = sa.Column(sa.String, nullable=True)
-    secondkill = sa.Column(sa.String, nullable=True)
-    thirdkill = sa.Column(sa.String, nullable=True)
-    number = sa.Column(sa.Integer, nullable=True)
+    engine = sa.create_engine(conn_str, echo=False)
+    __factory = orm.sessionmaker(bind=engine)
+
+    from . import __all_models
+
+    SqlAlchemyBase.metadata.create_all(engine)
+
+def create_session() -> Session:
+    global __factory
+    return __factory()

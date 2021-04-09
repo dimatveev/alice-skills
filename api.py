@@ -1,14 +1,16 @@
-# coding: utf-8
-# Импортирует поддержку UTF-8.
 from __future__ import unicode_literals
-from data import  db_session
-# Импортируем модули для работы с JSON и логами.
+from data import db_session
+
 import json
 import logging
-from flask_ngrok import run_with_ngrok
-# Импортируем подмодули Flask для запуска веб-сервиса.
+#from flask_ngrok import run_with_ngrok
+
 from flask import Flask, request
+
+
 app = Flask(__name__)
+#app.config['SECRET_KEY'] = 'yandexlyceum_secret_key'
+
 #run_with_ngrok(app)
 
 etap = 'askname'
@@ -18,9 +20,6 @@ fights = 0
 
 logging.basicConfig(level=logging.DEBUG)
 
-# Хранилище данных о сессиях.
-
-# Задаем параметры приложения Flask.
 @app.route("/", methods=['POST'])
 
 def main():
@@ -159,13 +158,32 @@ def handle_dialog(req, res):
     except Exception:
         pass
 
+    try:  # на всякий случай)
+        if state["hp"] <=0:
+            res['response'][
+                'text'] = 'Пока! Захочешь повторить магическое путешествие, я всегда тут!'
+            res['response'][
+                'tts'] = 'Пока! Захочешь повторить магическое путешествие, я всегда тут!'
+            res['response']['end_session'] = True
+            return
+    except Exception:
+        pass
 
+    if etap == 'ending':
+        if req["request"]["original_utterance"].lower() in ["награда", "получить награду"]:
+            res["response"]["text"] = f"Спасибо тебе храбрый {state['role']} {state['name']},  в награду ты получашь " \
+                                      f"признание людей! Если захочешь поиграть ещё, я всегда тут "
+            res['response']['end_session'] = True
+        else:
+            res["response"]["text"] = f"Спасибо тебе храбрый {state['role']} {state['name']},  в награду ты получашь " \
+                                      f"признание людей! Если захочешь поиграть ещё, я всегда тут "
+            res['response']['end_session'] = True
 
-    if etap == 'fight':
+    elif etap == 'fight':
         if fights == 0:
             if req["request"]["original_utterance"].lower() in ["начать приключение", "начни приключение"]:
-                res["response"]["text"] = f"Вы наткнулись на врага"
-       #         res["response"]["text"] = f"Вы наткнулись на {elf.enemy}"
+               res["response"]["text"] = f"Вы наткнулись на врага"
+               # res["response"]["text"] = f"Вы наткнулись на {elf.enemy}"
             else:
                 res["response"]["text"] = "Напоминаю, чтобы начать скажите 'начать приключение'"
 
@@ -230,23 +248,8 @@ def handle_dialog(req, res):
         state["name"] = req["request"]["original_utterance"]
         res["response"]["text"] = f'Супер! Правильно ли я поняла, что вас зовут {state["name"]}?'
         etap = 'checkname'
-    # Обрабатываем ответ пользователя.
-#    if req['request']['original_utterance'].lower() in [
-#        'ладно',
-#        'куплю',
-#        'покупаю',
-#        'хорошо',
-#    ]:
-#        # Пользователь согласился, прощаемся.
-#        res['response']['text'] = 'Раба можно найти на Яндекс.Маркете!'
-#        return
 
-    # Если нет, то убеждаем его купить слона!
-#    res['response']['text'] = 'Все говорят "%s", а ты купи раба!' % (
-#        req['request']['original_utterance']
-#    )
-
-# Функция возвращает две подсказки для ответа.
 
 if __name__ == '__main__':
-    app.run()
+        db_session.global_init("db/event.db")
+        app.run()
