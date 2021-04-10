@@ -1,7 +1,8 @@
 from __future__ import unicode_literals
 from data import db_session
-
+from data.wizards import Wizard
 import json
+import random
 import logging
 #from flask_ngrok import run_with_ngrok
 
@@ -11,26 +12,25 @@ from flask import Flask, request
 app = Flask(__name__)
 #app.config['SECRET_KEY'] = 'yandexlyceum_secret_key'
 
-#run_with_ngrok(app)
-
+# run_with_ngrok(app)
+num = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 etap = 'askname'
 state = {}
 fights = 0
 #elf = Elf()
-
 logging.basicConfig(level=logging.DEBUG)
 
 @app.route("/", methods=['POST'])
-
 def main():
+   # db_session.global_init("db/event.db")
 # Функция получает тело запроса и возвращает ответ.
     logging.info('Request: %r', request.json)
 
     response = {
-        "version": request.json['version'],
-        "session": request.json['session'],
-        "response": {
-            "end_session": False
+       "version": request.json['version'],
+       "session": request.json['session'],
+       "response": {
+           "end_session": False
         }
     }
 
@@ -48,7 +48,8 @@ def handle_dialog(req, res):
     global etap
     global state
     global fights
-    #global elf
+    global num
+   # global ellf
     user_id = req['session']['user_id']
 
     if req['session']['new']:
@@ -62,8 +63,8 @@ def handle_dialog(req, res):
 
     try:  # на всякий случай)
         if list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['закончить', 'диалог'] or \
-                list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['останови', 'диалог'] or \
-                    list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['завершить', 'диалог']:
+            list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['останови', 'диалог'] or \
+                list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['завершить', 'диалог']:
             res['response'][
                 'text'] = 'Пока! Захочешь повторить магическое путешествие, я всегда тут!'
             res['response'][
@@ -75,9 +76,9 @@ def handle_dialog(req, res):
     try:
         # что ты умеешь? - обязательный вопрос в навыке Алисы
         if list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['какие', 'способности', 'эльфа'] or \
-                list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['способности', 'у', 'эльфа'] or \
-                    list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['какие', 'способности', 'у' 'эльфа'] or \
-                        list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['способности', 'эльфа']:
+            list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['способности', 'у', 'эльфа'] or \
+                list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['какие', 'способности', 'у' 'эльфа'] or \
+                list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['способности', 'эльфа']:
             res['response']['text'] = 'начальное здоровье эльфа - 12, максимальный урон эльфа - 6, щит эльфа - 17 ' \
                                       'приёмы эльфа:Первый - стрельба из лука, второй - захват лозой, третий - удар кинжалом '
             return
@@ -87,9 +88,9 @@ def handle_dialog(req, res):
     try:
         # что ты умеешь? - обязательный вопрос в навыке Алисы
         if list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['какие', 'способности', 'рыцаря'] or \
-                list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['способности', 'у', 'рыцаря'] or \
-                    list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['какие', 'способности', 'у' 'рыцаря'] or \
-                        list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['способности', 'рыцаря']:
+            list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['способности', 'у', 'рыцаря'] or \
+                list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['какие', 'способности', 'у' 'рыцаря'] or \
+                list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['способности', 'рыцаря']:
             res['response']['text'] = 'начальное здоровье рыцаря - 13, максимальный урон рыцаря - 5, щит рыцаря - 17 ' \
                                       'приёмы рыцаря:Первый - удар мечём , второй - толчок щитом, третий - укол копьём '
             return
@@ -99,9 +100,9 @@ def handle_dialog(req, res):
     try:
         # что ты умеешь? - обязательный вопрос в навыке Алисы
         if list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['какие', 'способности', 'мага'] or \
-                list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['способности', 'у', 'мага'] or \
-                    list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['какие', 'способности', 'у' 'мага'] or \
-                        list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['способности', 'мага']:
+            list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['способности', 'у', 'мага'] or \
+                list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['какие', 'способности', 'у' 'мага'] or \
+                list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['способности', 'мага']:
             res['response']['text'] = 'начальное здоровье мага - 11, максимальный урон мага - 6, щит мага - 18 ' \
                                       'приёмы мага:Первый - фаербол, второй - энэргосфера, третий - теликинез '
             return
@@ -111,9 +112,9 @@ def handle_dialog(req, res):
     try:
         # что ты умеешь? - обязательный вопрос в навыке Алисы
         if list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['какие', 'способности', 'варвара'] or \
-                list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['способности', 'у', 'варвара'] or \
-                    list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['какие', 'способности', 'у' 'варвара'] or \
-                        list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['способности', 'варвара']:
+            list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['способности', 'у', 'варвара'] or \
+                list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['какие', 'способности', 'у' 'варвара'] or \
+                list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['способности', 'варвара']:
             res['response']['text'] = 'начальное здоровье варвара - 14, максимальный урон варвара - 7, щит варвара - 16 ' \
                                       'приёмы варвара:Первый - удар секирой, второй - бросок топора, третий - удар моргенштерном '
             return
@@ -125,7 +126,7 @@ def handle_dialog(req, res):
         if list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['что', 'ты', 'умеешь'] or \
                 list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['помощь']:
             res['response']['text'] = 'Я умею запускать игру Подземелья и Драконы, где пользователь сталкивается с разными препятствиями ' + \
-                                        'в эту игру можно играть даже одному, потому что ведущий - это Алиса'
+                'в эту игру можно играть даже одному, потому что ведущий - это Алиса'
             return
     except Exception:
         pass
@@ -147,19 +148,19 @@ def handle_dialog(req, res):
     try:
         # правила
         if list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['расскажи', 'правила'] or \
-                list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['какие', 'правила'] or \
-                    list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['правила']:
+            list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['какие', 'правила'] or \
+                list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['правила']:
             res['response']['text'] = 'В этой игре ты выбираешь одного из четырёх персонажей, эльф, маг, варвар, рыцарь ' + \
-                                        'каждый ход ты сталкиваешься с событиями, они могут как прибавлять здоровье, так и отнимать ' \
-                                        'при каждом событии надо бросать кубик щита, он определяет, будешь ли ты наносить урон или получать хил ' \
-                                        'кубик щита в деапозоне от одного до двадцати ' \
-                                        'если вы пробили щит врага, то вы бросаете кубик урона, кубик урона для каждого персонажа разный'
+                'каждый ход ты сталкиваешься с событиями, они могут как прибавлять здоровье, так и отнимать ' \
+                'при каждом событии надо бросать кубик щита, он определяет, будешь ли ты наносить урон или получать хил ' \
+                'кубик щита в деапозоне от одного до двадцати ' \
+                'если вы пробили щит врага, то вы бросаете кубик урона, кубик урона для каждого персонажа разный'
             return
     except Exception:
         pass
 
     try:  # на всякий случай)
-        if state["hp"] <=0:
+        if state["hp"] <= 0:
             res['response'][
                 'text'] = 'Пока! Захочешь повторить магическое путешествие, я всегда тут!'
             res['response'][
@@ -181,9 +182,16 @@ def handle_dialog(req, res):
 
     elif etap == 'fight':
         if fights == 0:
+            n = random.choice(num)
+            wizard0 = db_sess.query(Wizard).filter(Wizard.id == n).first()
             if req["request"]["original_utterance"].lower() in ["начать приключение", "начни приключение"]:
-               res["response"]["text"] = f"Вы наткнулись на врага"
-               # res["response"]["text"] = f"Вы наткнулись на {elf.enemy}"
+            #    res["response"]["text"] = f"Вы наткнулись на врага"
+                res["response"]["text"] = f"Вы наткнулись на {wizard0.enemy}\n" \
+                                          f"Параметры врага:\n" \
+                                          f"хп: {wizard0.enemyhp}\n" \
+                                          f"щит: {wizard0.shield}\n"\
+                                          f"минимальная атака: {wizard0.minatack}\n" \
+                                          f"максимальная атака: {wizard0.maxatack}"
             else:
                 res["response"]["text"] = "Напоминаю, чтобы начать скажите 'начать приключение'"
 
@@ -195,10 +203,10 @@ def handle_dialog(req, res):
             etap = 'fight'
         else:
             res["response"]["text"] = "Напоминаю, чтобы продолжить скажите 'продолжить'"
-    #Профиль: res["response"]["text"] =
-    #хп
-    #роль
-    #кол-во пройденых этапов
+    # Профиль: res["response"]["text"] =
+    # хп
+    # роль
+    # кол-во пройденых этапов
     #
 
     elif etap == 'askrole':
@@ -238,7 +246,7 @@ def handle_dialog(req, res):
     elif etap == 'checkname':
         if req["request"]["original_utterance"].lower() in ["да", "правильно"]:
             res["response"]["text"] = f'Приятно познокомиться, {state["name"]}. Теперь назовите персонажа, Для просмотра способномтей определённого персонажа' \
-                          ' скажите "какие способности у ..."'
+                ' скажите "какие способности у ..."'
             etap = 'askrole'
         elif req["request"]["original_utterance"].lower() in ["нет", "не правильно", "заново"]:
             res["response"]["text"] = "Повторите имя, пожалуйста"
@@ -251,5 +259,7 @@ def handle_dialog(req, res):
 
 
 if __name__ == '__main__':
-        db_session.global_init("db/event.db")
-        app.run()
+    db_session.global_init("db/event.db")
+    db_sess = db_session.create_session()
+   # ellf = db_sess.query(Elf).first()
+    app.run()
