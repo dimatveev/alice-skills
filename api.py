@@ -17,6 +17,9 @@ num = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 etap = 'askname'
 state = {}
 fights = 0
+fight_step = 1
+shi = 0
+atc = 0
 #elf = Elf()
 logging.basicConfig(level=logging.DEBUG)
 
@@ -49,6 +52,9 @@ def handle_dialog(req, res):
     global state
     global fights
     global num
+    global fight_step
+    global shi
+    global atc
    # global ellf
     user_id = req['session']['user_id']
 
@@ -184,16 +190,45 @@ def handle_dialog(req, res):
         if fights == 0:
             n = random.choice(num)
             wizard0 = db_sess.query(Wizard).filter(Wizard.id == n).first()
-            if req["request"]["original_utterance"].lower() in ["начать приключение", "начни приключение"]:
-            #    res["response"]["text"] = f"Вы наткнулись на врага"
-                res["response"]["text"] = f"Вы наткнулись на {wizard0.enemy}\n" \
-                                          f"Параметры врага:\n" \
-                                          f"хп: {wizard0.enemyhp}\n" \
-                                          f"щит: {wizard0.shield}\n"\
-                                          f"минимальная атака: {wizard0.minatack}\n" \
-                                          f"максимальная атака: {wizard0.maxatack}"
-            else:
-                res["response"]["text"] = "Напоминаю, чтобы начать скажите 'начать приключение'"
+            if fight_step == 1:
+                if req["request"]["original_utterance"].lower() in ["начать приключение", "начни приключение"]:
+                #    res["response"]["text"] = f"Вы наткнулись на врага"
+                    res["response"]["text"] = f"Вы наткнулись на {wizard0.enemy}\n" \
+                                              f"Параметры врага:\n" \
+                                              f"хп: {wizard0.enemyhp}\n" \
+                                              f"щит: {wizard0.shield}\n"\
+                                              f"минимальная атака: {wizard0.minatack}\n" \
+                                              f"максимальная атака: {wizard0.maxatack}\n" \
+                                              f"Чтобы ударить врага пробейте его щит, скажите 'брось кубик щита'"
+                    fight_step = 2
+
+                else:
+                    res["response"]["text"] = "Напоминаю, чтобы начать скажите 'начать приключение'"
+            elif fight_step == 2:
+                if req["request"]["original_utterance"].lower() in ["брось кубики щита", "брось кубик щита"]:
+                    shi = random.randint(15, 20)
+                    res["response"]["text"] = f"Вы выбросили {shi}, чтобы узнать пробили ли вы щит скажите 'продолжить'"
+                    fight_step = 3
+                else:
+                    res["response"]["text"] = "Напоминаю, чтобы пробить щит скажите 'брось кубик щита'"
+            elif fight_step == 3:
+                if req["request"]["original_utterance"].lower() in ["продолжить", "дальше"]:
+                    if shi >= wizard0.shield:
+                        res["response"]["text"] = "Вы пробили щит, тепрь бросьте кубик урона, чтобы это сделать " \
+                                                  "скажите 'брось кубик урона'"
+                        fight_step = 4
+                    else:
+                        res["response"]["text"] = "Вы не пробили щит, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
+                        fight_step = -1
+                else:
+                    res["response"]["text"] = "Напоминаю, чтобы продолжить скажите 'продолжить'"
+            elif fight_step == 4:
+                if req["request"]["original_utterance"].lower() in ["брось кубики урона", "брось кубик урона"]:
+                    atc = random.randint(state["mina"], state["maxa"])
+                    res["response"]["text"] = f"Вы выбросили и нанесли врагу {atc} урона, чтобы продолжить 'продолжить'"
+                    fight_step = -1
+                else:
+                    res["response"]["text"] = "Напоминаю, чтобы пробить щит скажите 'брось кубик урона'"
 
     elif etap == 'begin':
         if req["request"]["original_utterance"].lower() in ["продолжить", "дальше"]:
