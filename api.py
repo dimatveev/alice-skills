@@ -13,9 +13,10 @@ app = Flask(__name__)
 #app.config['SECRET_KEY'] = 'yandexlyceum_secret_key'
 
 # run_with_ngrok(app)
-num = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+num = [1, 3, 4, 6, 7, 8, 9, 10, 11, 13]
 etap = 'askname'
 state = {}
+stateen = {}
 fights = 0
 fight_step = 1
 shi = 0
@@ -55,6 +56,7 @@ def handle_dialog(req, res):
     global fight_step
     global shi
     global atc
+    global stateen
    # global ellf
     user_id = req['session']['user_id']
 
@@ -189,19 +191,251 @@ def handle_dialog(req, res):
 
 
     elif etap == 'fight':
-        if fights == 0:
+        if fights == 2:
+            n = random.choice(num)
+            wizard2 = db_sess.query(Wizard).filter(Wizard.id == n).first()
+            if fight_step == 1:
+                stateen["enem_hp"] = wizard2.enemyhp
+                stateen["enem"] = wizard2.enemy
+                stateen["enemshi"] = wizard2.shield
+                stateen["enemmina"] = wizard2.minatack
+                stateen["enemmaxa"] = wizard2.maxatack
+                stateen["enemfirst"] = wizard2.firstkill
+                stateen["enemsecond"] = wizard2.secondkill
+                stateen["enemthird"] = wizard2.thirdkill
+                if req["request"]["original_utterance"].lower() in ["продолжить приключение", "продолжи приключение"]:
+                    #    res["response"]["text"] = f"Вы наткнулись на врага"
+                    res["response"]["text"] = f"Вы наткнулись на {stateen['enem']}\n" \
+                                              f"Параметры врага:\n" \
+                                              f"хп: {stateen['enem_hp']}\n" \
+                                              f"щит: {stateen['enemshi']}\n" \
+                                              f"минимальная атака: {stateen['enemmina']}\n" \
+                                              f"максимальная атака: {stateen['enemmaxa']}\n" \
+                                              f"Чтобы ударить врага пробейте его щит, скажите 'брось кубик щита'"
+                    fight_step = 2
+
+                else:
+                    res["response"]["text"] = "Напоминаю, чтобы продолжить скажите 'продолжить приключение'"
+            elif fight_step == 2:
+                if req["request"]["original_utterance"].lower() in ["брось кубики щита", "брось кубик щита"]:
+                    shi = random.randint(15, 20)
+                    res["response"][
+                        "text"] = f"Вы выбросили {shi}, чтобы узнать пробили ли вы щит скажите 'продолжить'"
+                    fight_step = 3
+                else:
+                    res["response"]["text"] = "Напоминаю, чтобы пробить щит скажите 'брось кубик щита'"
+            elif fight_step == 3:
+                if req["request"]["original_utterance"].lower() in ["продолжить", "дальше"]:
+                    if shi >= stateen["enemshi"]:
+                        res["response"]["text"] = "Вы пробили щит, тепрь бросьте кубик урона, чтобы это сделать " \
+                                                  "скажите 'брось кубик урона'"
+                        fight_step = 4
+                    else:
+                        res["response"][
+                            "text"] = "Вы не пробили щит, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
+                        fight_step = -1
+                else:
+                    res["response"]["text"] = "Напоминаю, чтобы продолжить скажите 'продолжить'"
+            elif fight_step == 4:
+                if req["request"]["original_utterance"].lower() in ["брось кубики урона", "брось кубик урона"]:
+                    atc = random.randint(state["mina"], state["maxa"])
+                    stateen["enem_hp"] = stateen["enem_hp"] - atc
+                    res["response"][
+                        "text"] = f"тепрь скажите, какую атаку вы хотите использовать один два или три, \n" \
+                                  f"чтобы посмотреть атаки, скажите 'способности мага'"
+                    fight_step = 5
+                else:
+                    res["response"]["text"] = "Напоминаю, чтобы нанести урон скажите 'брось кубик урона'"
+            elif fight_step == 5:
+                if req["request"]["original_utterance"].lower() in ["1", "первая"]:
+                    if stateen["enem_hp"] > 0:
+                        res["response"][
+                            "text"] = f"Вы нанесли {atc} урона, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
+                        fight_step = -1
+                    else:
+                        res["response"][
+                            "text"] = f"{stateen['enemfirst']}, чтобы продолжить, скажите 'продолжить приключение'"
+                        fights = 3
+                        fight_step = 1
+                        num.remove(n)
+                elif req["request"]["original_utterance"].lower() in ["2", "вторая"]:
+                    if stateen["enem_hp"] > 0:
+                        res["response"][
+                            "text"] = f"Вы нанесли {atc} урона, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
+                        fight_step = -1
+                    else:
+                        res["response"][
+                            "text"] = f"{stateen['enemsecond']}, чтобы продолжить, скажите 'продолжить приключение'"
+                        fights = 3
+                        fight_step = 1
+                        num.remove(n)
+                elif req["request"]["original_utterance"].lower() in ["3", "третья"]:
+                    if stateen["enem_hp"] > 0:
+                        res["response"][
+                            "text"] = f"Вы нанесли {atc} урона, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
+                        fight_step = -1
+                    else:
+                        res["response"][
+                            "text"] = f"{stateen['enemthird']}, чтобы продолжить, скажите 'продолжить приключение'"
+                        fights = 3
+                        fight_step = 1
+                        num.remove(n)
+                else:
+                    res["response"]["text"] = f"скажите, какую атаку вы хотите использовать один два или три, \n" \
+                                              f"чтобы посмотреть атаки, скажите 'способности мага'"
+
+            elif fight_step == -1:
+                if req["request"]["original_utterance"].lower() in ["продолжить", "дальше"]:
+                    enem_atc = random.randint(stateen["enemmaxa"], stateen["enemmina"])
+                    enem_atsh = random.randint(15, 20)
+                    if enem_atsh >= state["shield"]:
+                        res["response"]["text"] = f"Враг выбросил {enem_atsh} и пробил ваш щит и нанёс вам {enem_atc} " \
+                                                  f"урона, теперь кидайте кубик щита" \
+                                                  f" напоминаю, чтобы пробить щит скажите 'брось кубик щита'"
+                        state["hp"] = state["hp"] + enem_atc
+                        fight_step = 2
+                    else:
+                        res["response"][
+                            "text"] = f"Враг выбросил {enem_atsh} и не пробил ваш щит теперь вы кидаете кубик щита" \
+                                      f" напоминаю, чтобы пробить щит скажите 'брось кубик щита'"
+                        fight_step = 2
+                else:
+                    res["response"]["text"] = "Напоминаю, чтобы продолжить скажите 'продолжить'"
+
+
+        elif fights == 1:
+            n = random.choice(num)
+            wizard1 = db_sess.query(Wizard).filter(Wizard.id == n).first()
+            if fight_step == 1:
+                stateen["enem_hp"] = wizard1.enemyhp
+                stateen["enem"] = wizard1.enemy
+                stateen["enemshi"] = wizard1.shield
+                stateen["enemmina"] = wizard1.minatack
+                stateen["enemmaxa"] = wizard1.maxatack
+                stateen["enemfirst"] = wizard1.firstkill
+                stateen["enemsecond"] = wizard1.secondkill
+                stateen["enemthird"] = wizard1.thirdkill
+                if req["request"]["original_utterance"].lower() in ["продолжить приключение", "продолжи приключение"]:
+                    #    res["response"]["text"] = f"Вы наткнулись на врага"
+                    res["response"]["text"] = f"Вы наткнулись на {stateen['enem']}\n" \
+                                              f"Параметры врага:\n" \
+                                              f"хп: {stateen['enem_hp']}\n" \
+                                              f"щит: {stateen['enemshi']}\n" \
+                                              f"минимальная атака: {stateen['enemmina']}\n" \
+                                              f"максимальная атака: {stateen['enemmaxa']}\n" \
+                                              f"Чтобы ударить врага пробейте его щит, скажите 'брось кубик щита'"
+                    fight_step = 2
+
+                else:
+                    res["response"]["text"] = "Напоминаю, чтобы продолжить скажите 'продолжить приключение'"
+            elif fight_step == 2:
+                if req["request"]["original_utterance"].lower() in ["брось кубики щита", "брось кубик щита"]:
+                    shi = random.randint(15, 20)
+                    res["response"][
+                        "text"] = f"Вы выбросили {shi}, чтобы узнать пробили ли вы щит скажите 'продолжить'"
+                    fight_step = 3
+                else:
+                    res["response"]["text"] = "Напоминаю, чтобы пробить щит скажите 'брось кубик щита'"
+            elif fight_step == 3:
+                if req["request"]["original_utterance"].lower() in ["продолжить", "дальше"]:
+                    if shi >= stateen["enemshi"]:
+                        res["response"]["text"] = "Вы пробили щит, тепрь бросьте кубик урона, чтобы это сделать " \
+                                                  "скажите 'брось кубик урона'"
+                        fight_step = 4
+                    else:
+                        res["response"][
+                            "text"] = "Вы не пробили щит, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
+                        fight_step = -1
+                else:
+                    res["response"]["text"] = "Напоминаю, чтобы продолжить скажите 'продолжить'"
+            elif fight_step == 4:
+                if req["request"]["original_utterance"].lower() in ["брось кубики урона", "брось кубик урона"]:
+                    atc = random.randint(state["mina"], state["maxa"])
+                    stateen["enem_hp"] = stateen["enem_hp"] - atc
+                    res["response"][
+                        "text"] = f"тепрь скажите, какую атаку вы хотите использовать один два или три, \n" \
+                                  f"чтобы посмотреть атаки, скажите 'способности мага'"
+                    fight_step = 5
+                else:
+                    res["response"]["text"] = "Напоминаю, чтобы нанести урон скажите 'брось кубик урона'"
+            elif fight_step == 5:
+                if req["request"]["original_utterance"].lower() in ["1", "первая"]:
+                    if stateen["enem_hp"] > 0:
+                        res["response"][
+                            "text"] = f"Вы нанесли {atc} урона, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
+                        fight_step = -1
+                    else:
+                        res["response"][
+                            "text"] = f"{stateen['enemfirst']}, чтобы продолжить, скажите 'продолжить приключение'"
+                        fights = 2
+                        fight_step = 1
+                        num.remove(n)
+                elif req["request"]["original_utterance"].lower() in ["2", "вторая"]:
+                    if stateen["enem_hp"] > 0:
+                        res["response"][
+                            "text"] = f"Вы нанесли {atc} урона, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
+                        fight_step = -1
+                    else:
+                        res["response"][
+                            "text"] = f"{stateen['enemsecond']}, чтобы продолжить, скажите 'продолжить приключение'"
+                        fights = 2
+                        fight_step = 1
+                        num.remove(n)
+                elif req["request"]["original_utterance"].lower() in ["3", "третья"]:
+                    if stateen["enem_hp"] > 0:
+                        res["response"][
+                            "text"] = f"Вы нанесли {atc} урона, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
+                        fight_step = -1
+                    else:
+                        res["response"][
+                            "text"] = f"{stateen['enemthird']}, чтобы продолжить, скажите 'продолжить приключение'"
+                        fights = 2
+                        fight_step = 1
+                        num.remove(n)
+                else:
+                    res["response"]["text"] = f"скажите, какую атаку вы хотите использовать один два или три, \n" \
+                                              f"чтобы посмотреть атаки, скажите 'способности мага'"
+
+            elif fight_step == -1:
+                if req["request"]["original_utterance"].lower() in ["продолжить", "дальше"]:
+                    enem_atc = random.randint(stateen["enemmaxa"], stateen["enemmina"])
+                    enem_atsh = random.randint(15, 20)
+                    if enem_atsh >= state["shield"]:
+                        res["response"]["text"] = f"Враг выбросил {enem_atsh} и пробил ваш щит и нанёс вам {enem_atc} " \
+                                                  f"урона, теперь кидайте кубик щита" \
+                                                  f" напоминаю, чтобы пробить щит скажите 'брось кубик щита'"
+                        state["hp"] = state["hp"] + enem_atc
+                        fight_step = 2
+                    else:
+                        res["response"][
+                            "text"] = f"Враг выбросил {enem_atsh} и не пробил ваш щит теперь вы кидаете кубик щита" \
+                                      f" напоминаю, чтобы пробить щит скажите 'брось кубик щита'"
+                        fight_step = 2
+                else:
+                    res["response"]["text"] = "Напоминаю, чтобы продолжить скажите 'продолжить'"
+
+
+
+        elif fights == 0:
             n = random.choice(num)
             wizard0 = db_sess.query(Wizard).filter(Wizard.id == n).first()
-            enem_hp = wizard0.enemyhp
             if fight_step == 1:
+                stateen["enem_hp"] = wizard0.enemyhp
+                stateen["enem"] = wizard0.enemy
+                stateen["enemshi"] = wizard0.shield
+                stateen["enemmina"] = wizard0.minatack
+                stateen["enemmaxa"] = wizard0.maxatack
+                stateen["enemfirst"] = wizard0.firstkill
+                stateen["enemsecond"] = wizard0.secondkill
+                stateen["enemthird"] = wizard0.thirdkill
                 if req["request"]["original_utterance"].lower() in ["начать приключение", "начни приключение"]:
                 #    res["response"]["text"] = f"Вы наткнулись на врага"
-                    res["response"]["text"] = f"Вы наткнулись на {wizard0.enemy}\n" \
+                    res["response"]["text"] = f"Вы наткнулись на {stateen['enem']}\n" \
                                               f"Параметры врага:\n" \
-                                              f"хп: {wizard0.enemyhp}\n" \
-                                              f"щит: {wizard0.shield}\n"\
-                                              f"минимальная атака: {wizard0.minatack}\n" \
-                                              f"максимальная атака: {wizard0.maxatack}\n" \
+                                              f"хп: {stateen['enem_hp']}\n" \
+                                              f"щит: {stateen['enemshi']}\n"\
+                                              f"минимальная атака: {stateen['enemmina']}\n" \
+                                              f"максимальная атака: {stateen['enemmaxa']}\n" \
                                               f"Чтобы ударить врага пробейте его щит, скажите 'брось кубик щита'"
                     fight_step = 2
 
@@ -216,7 +450,7 @@ def handle_dialog(req, res):
                     res["response"]["text"] = "Напоминаю, чтобы пробить щит скажите 'брось кубик щита'"
             elif fight_step == 3:
                 if req["request"]["original_utterance"].lower() in ["продолжить", "дальше"]:
-                    if shi >= wizard0.shield:
+                    if shi >= stateen["enemshi"]:
                         res["response"]["text"] = "Вы пробили щит, тепрь бросьте кубик урона, чтобы это сделать " \
                                                   "скажите 'брось кубик урона'"
                         fight_step = 4
@@ -228,7 +462,7 @@ def handle_dialog(req, res):
             elif fight_step == 4:
                 if req["request"]["original_utterance"].lower() in ["брось кубики урона", "брось кубик урона"]:
                     atc = random.randint(state["mina"], state["maxa"])
-                    enem_hp = enem_hp - atc
+                    stateen["enem_hp"] = stateen["enem_hp"] - atc
                     res["response"]["text"] = f"тепрь скажите, какую атаку вы хотите использовать один два или три, \n" \
                                               f"чтобы посмотреть атаки, скажите 'способности мага'"
                     fight_step = 5
@@ -236,41 +470,45 @@ def handle_dialog(req, res):
                     res["response"]["text"] = "Напоминаю, чтобы нанести урон скажите 'брось кубик урона'"
             elif fight_step == 5:
                 if req["request"]["original_utterance"].lower() in ["1", "первая"]:
-                    if enem_hp > 0:
+                    if stateen["enem_hp"] > 0:
                         res["response"]["text"] = f"Вы нанесли {atc} урона, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
                         fight_step = -1
                     else:
-                        res["response"]["text"] = f"{wizard0.firstkill}, чтобы продолжить, скажите 'продолжить приключение'"
+                        res["response"]["text"] = f"{stateen['enemfirst']}, чтобы продолжить, скажите 'продолжить приключение'"
                         fights = 1
                         fight_step = 1
+                        num.remove(n)
                 elif req["request"]["original_utterance"].lower() in ["2", "вторая"]:
-                    if enem_hp > 0:
+                    if stateen["enem_hp"] > 0:
                         res["response"]["text"] = f"Вы нанесли {atc} урона, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
                         fight_step = -1
                     else:
-                        res["response"]["text"] = f"{wizard0.secondkill}, чтобы продолжить, скажите 'продолжить приключение'"
+                        res["response"]["text"] = f"{stateen['enemsecond']}, чтобы продолжить, скажите 'продолжить приключение'"
                         fights = 1
                         fight_step = 1
+                        num.remove(n)
                 elif req["request"]["original_utterance"].lower() in ["3", "третья"]:
-                    if enem_hp > 0:
+                    if stateen["enem_hp"] > 0:
                         res["response"]["text"] = f"Вы нанесли {atc} урона, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
                         fight_step = -1
                     else:
-                        res["response"]["text"] = f"{wizard0.thirdkill}, чтобы продолжить, скажите 'продолжить приключение'"
+                        res["response"]["text"] = f"{stateen['enemthird']}, чтобы продолжить, скажите 'продолжить приключение'"
                         fights = 1
                         fight_step = 1
+                        num.remove(n)
                 else:
                     res["response"]["text"] = f"скажите, какую атаку вы хотите использовать один два или три, \n" \
                                               f"чтобы посмотреть атаки, скажите 'способности мага'"
 
             elif fight_step == -1:
                 if req["request"]["original_utterance"].lower() in ["продолжить", "дальше"]:
-                    enem_atc = random.randint(wizard0.maxatack, wizard0.minatack)
+                    enem_atc = random.randint(stateen["enemmaxa"], stateen["enemmina"])
                     enem_atsh = random.randint(15, 20)
                     if enem_atsh >= state["shield"]:
                         res["response"]["text"] = f"Враг выбросил {enem_atsh} и пробил ваш щит и нанёс вам {enem_atc} " \
                                                   f"урона, теперь кидайте кубик щита" \
                                                   f" напоминаю, чтобы пробить щит скажите 'брось кубик щита'"
+                        state["hp"] = state["hp"] + enem_atc
                         fight_step = 2
                     else:
                         res["response"]["text"] = f"Враг выбросил {enem_atsh} и не пробил ваш щит теперь вы кидаете кубик щита" \
