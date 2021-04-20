@@ -7,16 +7,12 @@ from data.knights import Knight
 import json
 import random
 import logging
-# from flask_ngrok import run_with_ngrok
+
 
 from flask import Flask, request
 
 app = Flask(__name__)
 
-
-# app.config['SECRET_KEY'] = 'yandexlyceum_secret_key'
-
-# run_with_ngrok(app)
 
 class State:
     def __init__(
@@ -44,7 +40,6 @@ class State:
         return self.__dict__
 
 
-# elf = Elf()
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -78,9 +73,12 @@ def handle_dialog(req, res):
     state: State = State(**state_dict)
 
     if req['session']['new']:
-        # Это новый пользователь.
-        # Инициализируем сессию и поприветствуем его.
         res['response']['text'] = 'Привет! Это игра Подземелья и драконы, чтобы узнать правила, скажите раскажи правила. ' \
+                                  'Назовите имя и после подтверждения выберетие одного из четырёх персонажей для начала путишествия. ' \
+                                  'Персонажи: Эльф, маг, варвар, рыцарь. Для просмотра способностей отдельного персонажа' \
+                                  ' скажите "какие способности у мага" '
+        res['response']['tts'] = '<speaker audio="alice-sounds-game-boot-1.opus"> Привет! Это игра Подземелья и драконы,' \
+                                 ' чтобы узнать правила, скажите раскажи правила. ' \
                                   'Назовите имя и после подтверждения выберетие одного из четырёх персонажей для начала путишествия. ' \
                                   'Персонажи: Эльф, маг, варвар, рыцарь. Для просмотра способностей отдельного персонажа' \
                                   ' скажите "какие способности у мага" '
@@ -94,7 +92,7 @@ def handle_dialog(req, res):
                 list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['стоп'] or \
                 list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['хватит']:
             res['response']['text'] = 'Пока! Захочешь повторить магическое путешествие, я всегда тут!'
-            res['response']['tts'] = 'Пока! Захочешь повторить магическое путешествие, я всегда тут!'
+            res['response']['tts'] = '<speaker audio="alice-sounds-game-boot-1.opus"> Пока! Захочешь повторить магическое путешествие, я всегда тут!'
             state.state = {}
             state.etap = "askname"
             state.fights = 0
@@ -110,7 +108,7 @@ def handle_dialog(req, res):
                 list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['заново'] or \
                 list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['снова']:
             res['response']['text'] = 'Хорошо, назовите имя ещё раз'
-            res['response']['tts'] = 'Хорошо, назовите имя ещё раз'
+            res['response']['tts'] = '<speaker audio="alice-sounds-game-boot-1.opus"> Хорошо, назовите имя ещё раз'
             state.state = {}
             state.etap = "askname"
             state.fights = 0
@@ -172,6 +170,9 @@ def handle_dialog(req, res):
                 list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['помощь']:
             res['response']['text'] = 'Я умею запускать игру Подземелья и Драконы, где пользователь сталкивается с разными препятствиями ' + \
                                       'в эту игру можно играть даже одному, потому что ведущий - это Алиса'
+            res['response']['tts'] = '<speaker audio="alice-sounds-game-boot-1.opus"> Я умею запускать игру Подземелья ' \
+                                     'и Драконы, где пользователь сталкивается с разными препятствиями ' + \
+                                      'в эту игру можно играть даже одному, потому что ведущий - это Алиса'
             res['user_state_update'] = state.to_dict()
             return
     except Exception:
@@ -186,17 +187,29 @@ def handle_dialog(req, res):
                                       f'Щит:{state.state["shield"]}\n' \
                                       f'Минимальная атака:{state.state["mina"]}\n' \
                                       f'Максимальная атака:{state.state["maxa"]}'
+            res['response']['tts'] = f'<speaker audio="alice-sounds-game-powerup-1.opus">'\
+                                     f'Имя:{state.state["name"]}\n' \
+                                     f'Герой:{state.state["role"]}\n' \
+                                     f'Хп:{state.state["hp"]}\n' \
+                                     f'Щит:{state.state["shield"]}\n' \
+                                     f'Минимальная атака:{state.state["mina"]}\n' \
+                                     f'Максимальная атака:{state.state["maxa"]}'
             res['user_state_update'] = state.to_dict()
             return
     except Exception:
         pass
 
     try:
-        # правила
         if list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['расскажи', 'правила'] or \
                 list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['какие', 'правила'] or \
                 list(map(lambda x: x.lower(), req['request']['nlu']['tokens'])) == ['правила']:
             res['response']['text'] = 'В этой игре ты выбираешь одного из четырёх персонажей, эльф, маг, варвар, рыцарь ' \
+                                      'каждый ход ты сталкиваешься с врагами которые будут наносить тебе урон ' \
+                                      'при каждом событии надо пробивать щит, он определяет, будешь ли ты наносить урон ' \
+                                      'кубик щита в деапозоне от одного до двадцати ' \
+                                      'если вы пробили щит врага, то вы бросаете кубик урона, кубик урона для каждого персонажа разный'
+            res['response']['tts'] = '<speaker audio="alice-sounds-game-boot-1.opus"> В этой игре ты выбираешь одного из' \
+                                     ' четырёх персонажей, эльф, маг, варвар, рыцарь ' \
                                       'каждый ход ты сталкиваешься с врагами которые будут наносить тебе урон ' \
                                       'при каждом событии надо пробивать щит, он определяет, будешь ли ты наносить урон ' \
                                       'кубик щита в деапозоне от одного до двадцати ' \
@@ -210,6 +223,9 @@ def handle_dialog(req, res):
         if req["request"]["original_utterance"].lower() in ["награда", "получить награду"]:
             res["response"]["text"] = f"Спасибо тебе храбрый {state.state['role']} {state.state['name']},  в награду ты получашь " \
                                       f"признание людей! Если захочешь поиграть ещё, я всегда тут "
+            res["response"]["tts"] =  f'<speaker audio="alice-sounds-game-8-bit-coin-1.opus">'\
+                                      f"Спасибо тебе храбрый {state.state['role']} {state.state['name']},  в награду ты получашь " \
+                                      f"признание людей! Если захочешь поиграть ещё, я всегда тут "
             res['response']['end_session'] = True
             state.state = {}
             state.etap = "askname"
@@ -218,6 +234,9 @@ def handle_dialog(req, res):
             state.num = [1, 3, 4, 6, 7, 8, 9, 10, 11, 13]
         else:
             res["response"]["text"] = f"Спасибо тебе храбрый {state.state['role']} {state.state['name']},  в награду ты получашь " \
+                                      f"признание людей! Если захочешь поиграть ещё, я всегда тут "
+            res["response"]["tts"] =  f'<speaker audio="alice-sounds-game-8-bit-coin-1.opus">'\
+                                      f"Спасибо тебе храбрый {state.state['role']} {state.state['name']},  в награду ты получашь " \
                                       f"признание людей! Если захочешь поиграть ещё, я всегда тут "
             res['response']['end_session'] = True
             state.state = {}
@@ -241,7 +260,6 @@ def handle_dialog(req, res):
                     state.stateen["enemsecond"] = wizard3.secondkill
                     state.stateen["enemthird"] = wizard3.thirdkill
                     if req["request"]["original_utterance"].lower() in ["найти дракона", "искать дракона"]:
-                        #    res["response"]["text"] = f"Вы наткнулись на врага"
                         res["response"]["text"] = f"Вы встретили огромного дракона, сторожащего золото\n" \
                                                   f"Параметры дракона:\n" \
                                                   f"хп: {state.stateen['enem_hp']}\n" \
@@ -264,7 +282,7 @@ def handle_dialog(req, res):
                 elif state.fight_step == 3:
                     if req["request"]["original_utterance"].lower() in ["продолжить", "дальше"]:
                         if state.shi >= state.stateen["enemshi"]:
-                            res["response"]["text"] = "Вы пробили щит, тепрь бросьте кубик урона, чтобы это сделать " \
+                            res["response"]["text"] = "Вы пробили щит, теперь бросьте кубик урона, чтобы это сделать " \
                                                       "скажите 'нанести урон'"
                             state.fight_step = 4
                         else:
@@ -275,41 +293,47 @@ def handle_dialog(req, res):
                         res["response"]["text"] = "Напоминаю, чтобы продолжить скажите 'продолжить'"
                 elif state.fight_step == 4:
                     if req["request"]["original_utterance"].lower() in ["нанеси урон", "нанести урон"]:
-                        atc = random.randint(state.state["mina"], state.state["maxa"])
-                        state.stateen["enem_hp"] = state.stateen["enem_hp"] - atc
+                        state.atc = random.randint(state.state["mina"], state.state["maxa"])
+                        state.stateen["enem_hp"] = state.stateen["enem_hp"] - state.atc
                         res["response"][
-                            "text"] = f"тепрь скажите, какую атаку вы хотите использовать один два или три, \n" \
+                            "text"] = f"теперь скажите, какую атаку вы хотите использовать один два или три, \n" \
                                       f"чтобы посмотреть атаки, скажите 'способности мага'"
                         state.fight_step = 5
                     else:
                         res["response"]["text"] = "Напоминаю, чтобы нанести урон скажите 'нанести урон'"
                 elif state.fight_step == 5:
-                    if req["request"]["original_utterance"].lower() in ["1", "первая"]:
+                    if req["request"]["original_utterance"].lower() in ["1", "первая", "один"]:
                         if state.stateen["enem_hp"] > 0:
                             res["response"][
                                 "text"] = f"Вы нанесли {state.atc} урона, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
                             state.fight_step = -1
                         else:
                             res["response"]["text"] = f"Вы испепелили злобного дракона, чтобы получить награду, скажите 'получить награду'"
+                            res["response"]["tts"] = f'<speaker audio="alice-sounds-game-win-3.opus"> Вы испепелили злобного дракона, ' \
+                                                     f'чтобы получить награду, скажите "получить награду"'
                             state.fights = 1
                             state.fight_step = 1
                             state.etap = 'ending'
-                    elif req["request"]["original_utterance"].lower() in ["2", "вторая"]:
+                    elif req["request"]["original_utterance"].lower() in ["2", "вторая", "два"]:
                         if state.stateen["enem_hp"] > 0:
                             res["response"]["text"] = f"Вы нанесли {state.atc} урона дракону, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
                             state.fight_step = -1
                         else:
                             res["response"]["text"] = f"Вы уничтожили злобного дракона энергосферой, чтобы получить награду, скажите 'получить награду'"
+                            res["response"]["tts"] = f'<speaker audio="alice-sounds-game-win-3.opus"> Вы уничтожили злобного' \
+                                                     f' дракона энергосферой, чтобы получить награду, скажите "получить награду"'
                             state.fights = 1
                             state.fight_step = 1
                             state.etap = 'ending'
-                    elif req["request"]["original_utterance"].lower() in ["3", "третья"]:
+                    elif req["request"]["original_utterance"].lower() in ["3", "третья", "три"]:
                         if state.stateen["enem_hp"] > 0:
                             res["response"][
                                 "text"] = f"Вы нанесли {state.atc} урона, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
                             state.fight_step = -1
                         else:
                             res["response"]["text"] = f"Вы разорвали дракона с помощью теликинеза, чтобы получить награду, скажите 'получить награду'"
+                            res["response"]["tts"] = f'<speaker audio="alice-sounds-game-win-3.opus"> Вы разорвали дракона ' \
+                                                     f'с помощью теликинеза, чтобы получить награду, скажите "получить награду"'
                             state.fights = 1
                             state.fight_step = 1
                             state.etap = 'ending'
@@ -330,7 +354,11 @@ def handle_dialog(req, res):
                         elif enem_atsh >= state.state["shield"] and (state.state["hp"] + enem_atc) <= 0:
                             res["response"]["text"] = f"Враг выбросил {enem_atsh} и пробил ваш щит и нанёс вам {enem_atc} " \
                                                       f"урона, и к сожалению вы погибли..." \
-                                                      f" захотите пограть еще, я всегда тут"
+                                                      f" захотите поиграть еще, я всегда тут"
+                            res["response"]["tts"] = f'<speaker audio="alice-sounds-game-loss-3.opus">'\
+                                                      f"Враг выбросил {enem_atsh} и пробил ваш щит и нанёс вам {enem_atc} " \
+                                                      f"урона, и к сожалению вы погибли..." \
+                                                      f" захотите поиграть еще, я всегда тут"
                             res['response']['end_session'] = True
                             state.state = {}
                             state.etap = "askname"
@@ -358,7 +386,6 @@ def handle_dialog(req, res):
                     state.stateen["enemsecond"] = wizard2.secondkill
                     state.stateen["enemthird"] = wizard2.thirdkill
                     if req["request"]["original_utterance"].lower() in ["продолжить приключение", "продолжи приключение"]:
-                        #    res["response"]["text"] = f"Вы наткнулись на врага"
                         res["response"]["text"] = f"Вы наткнулись на {state.stateen['enem']}\n" \
                                                   f"Параметры врага:\n" \
                                                   f"хп: {state.stateen['enem_hp']}\n" \
@@ -381,7 +408,7 @@ def handle_dialog(req, res):
                 elif state.fight_step == 3:
                     if req["request"]["original_utterance"].lower() in ["продолжить", "дальше"]:
                         if state.shi >= state.stateen["enemshi"]:
-                            res["response"]["text"] = "Вы пробили щит, тепрь бросьте кубик урона, чтобы это сделать " \
+                            res["response"]["text"] = "Вы пробили щит, теперь бросьте кубик урона, чтобы это сделать " \
                                                       "скажите 'нанести урон'"
                             state.fight_step = 4
                         else:
@@ -392,47 +419,47 @@ def handle_dialog(req, res):
                         res["response"]["text"] = "Напоминаю, чтобы продолжить скажите 'продолжить'"
                 elif state.fight_step == 4:
                     if req["request"]["original_utterance"].lower() in ["нанеси урон", "нанести урон"]:
-                        atc = random.randint(state.state["mina"], state.state["maxa"])
-                        state.stateen["enem_hp"] = state.stateen["enem_hp"] - atc
+                        state.atc = random.randint(state.state["mina"], state.state["maxa"])
+                        state.stateen["enem_hp"] = state.stateen["enem_hp"] - state.atc
                         res["response"][
-                            "text"] = f"тепрь скажите, какую атаку вы хотите использовать один два или три, \n" \
+                            "text"] = f"теперь скажите, какую атаку вы хотите использовать один два или три, \n" \
                                       f"чтобы посмотреть атаки, скажите 'способности мага'"
                         state.fight_step = 5
                     else:
                         res["response"]["text"] = "Напоминаю, чтобы нанести урон скажите 'нанести урон'"
                 elif state.fight_step == 5:
-                    if req["request"]["original_utterance"].lower() in ["1", "первая"]:
+                    if req["request"]["original_utterance"].lower() in ["1", "первая", "один"]:
                         if state.stateen["enem_hp"] > 0:
                             res["response"][
                                 "text"] = f"Вы нанесли {state.atc} урона, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
                             state.fight_step = -1
                         else:
                             res["response"][
-                                "text"] = f"{state.stateen['enemfirst']}. Вы узали, что в вашем королевстве беда! Казну обокрал " \
+                                "text"] = f"{state.stateen['enemfirst']}. Вы узнали, что в вашем королевстве беда! Казну обокрал " \
                                           f"дракон, чтобы найти логово дракона, скажите 'найти дракона'"
                             state.fights = 3
                             state.fight_step = 1
                             state.num.remove(n)
-                    elif req["request"]["original_utterance"].lower() in ["2", "вторая"]:
+                    elif req["request"]["original_utterance"].lower() in ["2", "вторая", "два"]:
                         if state.stateen["enem_hp"] > 0:
                             res["response"][
                                 "text"] = f"Вы нанесли {state.atc} урона, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
                             state.fight_step = -1
                         else:
                             res["response"][
-                                "text"] = f"{state.stateen['enemsecond']}. Вы узали, что в вашем королевстве беда! Казну обокрал " \
+                                "text"] = f"{state.stateen['enemsecond']}. Вы узнали, что в вашем королевстве беда! Казну обокрал " \
                                           f"дракон, чтобы найти логово дракона, скажите 'найти дракона'"
                             state.fights = 3
                             state.fight_step = 1
                             state.num.remove(n)
-                    elif req["request"]["original_utterance"].lower() in ["3", "третья"]:
+                    elif req["request"]["original_utterance"].lower() in ["3", "третья", "три"]:
                         if state.stateen["enem_hp"] > 0:
                             res["response"][
                                 "text"] = f"Вы нанесли {state.atc} урона, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
                             state.fight_step = -1
                         else:
                             res["response"][
-                                "text"] = f"{state.stateen['enemthird']}. Вы узали, что в вашем королевстве беда! Казну обокрал " \
+                                "text"] = f"{state.stateen['enemthird']}. Вы узнали, что в вашем королевстве беда! Казну обокрал " \
                                           f"дракон, чтобы найти логово дракона, скажите 'найти дракона'"
                             state.fights = 3
                             state.fight_step = 1
@@ -454,7 +481,11 @@ def handle_dialog(req, res):
                         elif enem_atsh >= state.state["shield"] and (state.state["hp"] + enem_atc) <= 0:
                             res["response"]["text"] = f"Враг выбросил {enem_atsh} и пробил ваш щит и нанёс вам {enem_atc} " \
                                                       f"урона, и к сожалению вы погибли..." \
-                                                      f" захотите пограть еще, я всегда тут"
+                                                      f" захотите поиграть еще, я всегда тут"
+                            res["response"]["tts"] = f'<speaker audio="alice-sounds-game-loss-3.opus">'\
+                                                      f"Враг выбросил {enem_atsh} и пробил ваш щит и нанёс вам {enem_atc} " \
+                                                      f"урона, и к сожалению вы погибли..." \
+                                                      f" захотите поиграть еще, я всегда тут"
                             res['response']['end_session'] = True
                             state.state = {}
                             state.etap = "askname"
@@ -482,7 +513,6 @@ def handle_dialog(req, res):
                     state.stateen["enemsecond"] = wizard1.secondkill
                     state.stateen["enemthird"] = wizard1.thirdkill
                     if req["request"]["original_utterance"].lower() in ["продолжить приключение", "продолжи приключение"]:
-                        #    res["response"]["text"] = f"Вы наткнулись на врага"
                         res["response"]["text"] = f"Вы наткнулись на {state.stateen['enem']}\n" \
                                                   f"Параметры врага:\n" \
                                                   f"хп: {state.stateen['enem_hp']}\n" \
@@ -505,7 +535,7 @@ def handle_dialog(req, res):
                 elif state.fight_step == 3:
                     if req["request"]["original_utterance"].lower() in ["продолжить", "дальше"]:
                         if state.shi >= state.stateen["enemshi"]:
-                            res["response"]["text"] = "Вы пробили щит, тепрь бросьте кубик урона, чтобы это сделать " \
+                            res["response"]["text"] = "Вы пробили щит, теперь бросьте кубик урона, чтобы это сделать " \
                                                       "скажите 'нанести урон'"
                             state.fight_step = 4
                         else:
@@ -516,16 +546,16 @@ def handle_dialog(req, res):
                         res["response"]["text"] = "Напоминаю, чтобы продолжить скажите 'продолжить'"
                 elif state.fight_step == 4:
                     if req["request"]["original_utterance"].lower() in ["нанеси урон", "нанести урон"]:
-                        atc = random.randint(state.state["mina"], state.state["maxa"])
-                        state.stateen["enem_hp"] = state.stateen["enem_hp"] - atc
+                        state.atc = random.randint(state.state["mina"], state.state["maxa"])
+                        state.stateen["enem_hp"] = state.stateen["enem_hp"] - state.atc
                         res["response"][
-                            "text"] = f"тепрь скажите, какую атаку вы хотите использовать один два или три, \n" \
+                            "text"] = f"теперь скажите, какую атаку вы хотите использовать один два или три, \n" \
                                       f"чтобы посмотреть атаки, скажите 'способности мага'"
                         state.fight_step = 5
                     else:
                         res["response"]["text"] = "Напоминаю, чтобы нанести урон скажите 'нанести урон'"
                 elif state.fight_step == 5:
-                    if req["request"]["original_utterance"].lower() in ["1", "первая"]:
+                    if req["request"]["original_utterance"].lower() in ["1", "первая", "один"]:
                         if state.stateen["enem_hp"] > 0:
                             res["response"][
                                 "text"] = f"Вы нанесли {state.atc} урона, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
@@ -536,7 +566,7 @@ def handle_dialog(req, res):
                             state.fights = 2
                             state.fight_step = 1
                             state.num.remove(n)
-                    elif req["request"]["original_utterance"].lower() in ["2", "вторая"]:
+                    elif req["request"]["original_utterance"].lower() in ["2", "вторая", "два"]:
                         if state.stateen["enem_hp"] > 0:
                             res["response"][
                                 "text"] = f"Вы нанесли {state.atc} урона, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
@@ -547,7 +577,7 @@ def handle_dialog(req, res):
                             state.fights = 2
                             state.fight_step = 1
                             state.num.remove(n)
-                    elif req["request"]["original_utterance"].lower() in ["3", "третья"]:
+                    elif req["request"]["original_utterance"].lower() in ["3", "третья", "три"]:
                         if state.stateen["enem_hp"] > 0:
                             res["response"][
                                 "text"] = f"Вы нанесли {state.atc} урона, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
@@ -575,7 +605,11 @@ def handle_dialog(req, res):
                         elif enem_atsh >= state.state["shield"] and (state.state["hp"] + enem_atc) <= 0:
                             res["response"]["text"] = f"Враг выбросил {enem_atsh} и пробил ваш щит и нанёс вам {enem_atc} " \
                                                       f"урона, и к сожалению вы погибли..." \
-                                                      f" захотите пограть еще, я всегда тут"
+                                                      f" захотите поиграть еще, я всегда тут"
+                            res["response"]["tts"] = f'<speaker audio="alice-sounds-game-loss-3.opus">'\
+                                                      f"Враг выбросил {enem_atsh} и пробил ваш щит и нанёс вам {enem_atc} " \
+                                                      f"урона, и к сожалению вы погибли..." \
+                                                      f" захотите поиграть еще, я всегда тут"
                             res['response']['end_session'] = True
                             state.state = {}
                             state.etap = "askname"
@@ -603,7 +637,6 @@ def handle_dialog(req, res):
                     state.stateen["enemsecond"] = wizard0.secondkill
                     state.stateen["enemthird"] = wizard0.thirdkill
                     if req["request"]["original_utterance"].lower() in ["начать приключение", "начни приключение"]:
-                        #    res["response"]["text"] = f"Вы наткнулись на врага"
                         res["response"]["text"] = f"Вы наткнулись на {state.stateen['enem']}\n" \
                                                   f"Параметры врага:\n" \
                                                   f"хп: {state.stateen['enem_hp']}\n" \
@@ -625,7 +658,7 @@ def handle_dialog(req, res):
                 elif state.fight_step == 3:
                     if req["request"]["original_utterance"].lower() in ["продолжить", "дальше"]:
                         if state.shi >= state.stateen["enemshi"]:
-                            res["response"]["text"] = "Вы пробили щит, тепрь бросьте кубик урона, чтобы это сделать " \
+                            res["response"]["text"] = "Вы пробили щит, теперь бросьте кубик урона, чтобы это сделать " \
                                                       "скажите 'нанести урон'"
                             state.fight_step = 4
                         else:
@@ -635,15 +668,15 @@ def handle_dialog(req, res):
                         res["response"]["text"] = "Напоминаю, чтобы продолжить скажите 'продолжить'"
                 elif state.fight_step == 4:
                     if req["request"]["original_utterance"].lower() in ["нанеси урон", "нанести урон"]:
-                        atc = random.randint(state.state["mina"], state.state["maxa"])
-                        state.stateen["enem_hp"] = state.stateen["enem_hp"] - atc
-                        res["response"]["text"] = f"тепрь скажите, какую атаку вы хотите использовать один два или три, \n" \
+                        state.atc = random.randint(state.state["mina"], state.state["maxa"])
+                        state.stateen["enem_hp"] = state.stateen["enem_hp"] - state.atc
+                        res["response"]["text"] = f"теперь скажите, какую атаку вы хотите использовать один два или три, \n" \
                                                   f"чтобы посмотреть атаки, скажите 'способности мага'"
                         state.fight_step = 5
                     else:
                         res["response"]["text"] = "Напоминаю, чтобы нанести урон скажите 'нанести урон'"
                 elif state.fight_step == 5:
-                    if req["request"]["original_utterance"].lower() in ["1", "первая"]:
+                    if req["request"]["original_utterance"].lower() in ["1", "первая", "один"]:
                         if state.stateen["enem_hp"] > 0:
                             res["response"]["text"] = f"Вы нанесли {state.atc} урона, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
                             state.fight_step = -1
@@ -652,7 +685,7 @@ def handle_dialog(req, res):
                             state.fights = 1
                             state.fight_step = 1
                             state.num.remove(n)
-                    elif req["request"]["original_utterance"].lower() in ["2", "вторая"]:
+                    elif req["request"]["original_utterance"].lower() in ["2", "вторая", "два"]:
                         if state.stateen["enem_hp"] > 0:
                             res["response"]["text"] = f"Вы нанесли {state.atc} урона, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
                             state.fight_step = -1
@@ -661,7 +694,7 @@ def handle_dialog(req, res):
                             state.fights = 1
                             state.fight_step = 1
                             state.num.remove(n)
-                    elif req["request"]["original_utterance"].lower() in ["3", "третья"]:
+                    elif req["request"]["original_utterance"].lower() in ["3", "третья", "три"]:
                         if state.stateen["enem_hp"] > 0:
                             res["response"]["text"] = f"Вы нанесли {state.atc} урона, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
                             state.fight_step = -1
@@ -687,7 +720,11 @@ def handle_dialog(req, res):
                         elif enem_atsh >= state.state["shield"] and (state.state["hp"] + enem_atc) <= 0:
                             res["response"]["text"] = f"Враг выбросил {enem_atsh} и пробил ваш щит и нанёс вам {enem_atc} " \
                                                       f"урона, и к сожалению вы погибли..." \
-                                                      f" захотите пограть еще, я всегда тут"
+                                                      f" захотите поиграть еще, я всегда тут"
+                            res["response"]["tts"] = f'<speaker audio="alice-sounds-game-loss-3.opus">'\
+                                                      f"Враг выбросил {enem_atsh} и пробил ваш щит и нанёс вам {enem_atc} " \
+                                                      f"урона, и к сожалению вы погибли..." \
+                                                      f" захотите поиграть еще, я всегда тут"
                             res['response']['end_session'] = True
                             state.state = {}
                             state.etap = "askname"
@@ -716,7 +753,6 @@ def handle_dialog(req, res):
                     state.stateen["enemsecond"] = elf3.secondkill
                     state.stateen["enemthird"] = elf3.thirdkill
                     if req["request"]["original_utterance"].lower() in ["найти дракона", "искать дракона"]:
-                        #    res["response"]["text"] = f"Вы наткнулись на врага"
                         res["response"]["text"] = f"Вы встретили огромного дракона, сторожащего золото\n" \
                                                   f"Параметры дракона:\n" \
                                                   f"хп: {state.stateen['enem_hp']}\n" \
@@ -739,7 +775,7 @@ def handle_dialog(req, res):
                 elif state.fight_step == 3:
                     if req["request"]["original_utterance"].lower() in ["продолжить", "дальше"]:
                         if state.shi >= state.stateen["enemshi"]:
-                            res["response"]["text"] = "Вы пробили щит, тепрь бросьте кубик урона, чтобы это сделать " \
+                            res["response"]["text"] = "Вы пробили щит, теперь бросьте кубик урона, чтобы это сделать " \
                                                       "скажите 'нанести урон'"
                             state.fight_step = 4
                         else:
@@ -750,45 +786,47 @@ def handle_dialog(req, res):
                         res["response"]["text"] = "Напоминаю, чтобы продолжить скажите 'продолжить'"
                 elif state.fight_step == 4:
                     if req["request"]["original_utterance"].lower() in ["нанеси урон", "нанести урон"]:
-                        atc = random.randint(state.state["mina"], state.state["maxa"])
-                        state.stateen["enem_hp"] = state.stateen["enem_hp"] - atc
+                        state.atc = random.randint(state.state["mina"], state.state["maxa"])
+                        state.stateen["enem_hp"] = state.stateen["enem_hp"] - state.atc
                         res["response"][
-                            "text"] = f"тепрь скажите, какую атаку вы хотите использовать один два или три, \n" \
-                                      f"чтобы посмотреть атаки, скажите 'способности мага'"
+                            "text"] = f"теперь скажите, какую атаку вы хотите использовать один два или три, \n" \
+                                      f"чтобы посмотреть атаки, скажите 'способности эльфа'"
                         state.fight_step = 5
                     else:
                         res["response"]["text"] = "Напоминаю, чтобы нанести урон скажите 'нанести урон'"
                 elif state.fight_step == 5:
-                    if req["request"]["original_utterance"].lower() in ["1", "первая"]:
+                    if req["request"]["original_utterance"].lower() in ["1", "первая", "один"]:
                         if state.stateen["enem_hp"] > 0:
                             res["response"][
                                 "text"] = f"Вы нанесли {state.atc} урона, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
                             state.fight_step = -1
                         else:
-                            res["response"][
-                                "text"] = f"Вы испепелили злобного дракона, чтобы получить награду, скажите 'получить награду'"
+                            res["response"]["text"] = f"Вы попали дракону в сердце, чтобы получить награду, скажите 'получить награду'"
+                            res["response"]["tts"] = f'<speaker audio="alice-sounds-game-win-3.opus"> Вы попали дракону в' \
+                                                     f' сердце, чтобы получить награду, скажите "получить награду"'
                             state.fights = 1
                             state.fight_step = 1
                             state.etap = 'ending'
-                    elif req["request"]["original_utterance"].lower() in ["2", "вторая"]:
+                    elif req["request"]["original_utterance"].lower() in ["2", "вторая", "два"]:
                         if state.stateen["enem_hp"] > 0:
                             res["response"][
                                 "text"] = f"Вы нанесли {state.atc} урона дракону, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
                             state.fight_step = -1
                         else:
-                            res["response"][
-                                "text"] = f"Вы уничтожили злобного дракона энергосферой, чтобы получить награду, скажите 'получить награду'"
+                            res["response"]["text"] = f"Вы задушили дракона, чтобы получить награду, скажите 'получить награду'"
+                            res["response"]["tts"] = f'<speaker audio="alice-sounds-game-win-3.opus"> Вы задушили дракона,' \
+                                                     f' чтобы получить награду, скажите "получить награду"'
                             state.fights = 1
                             state.fight_step = 1
                             state.etap = 'ending'
-                    elif req["request"]["original_utterance"].lower() in ["3", "третья"]:
+                    elif req["request"]["original_utterance"].lower() in ["3", "третья", "три"]:
                         if state.stateen["enem_hp"] > 0:
-                            res["response"][
-                                "text"] = f"Вы нанесли {state.atc} урона, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
+                            res["response"]["text"] = f"Вы нанесли {state.atc} урона, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
                             state.fight_step = -1
                         else:
-                            res["response"][
-                                "text"] = f"Вы разорвали дракона с помощью теликинеза, чтобы получить награду, скажите 'получить награду'"
+                            res["response"]["text"] = f"Вы кинули кинжал дракону прямо в сердце, чтобы получить награду, скажите 'получить награду'"
+                            res["response"]["tts"] = f'<speaker audio="alice-sounds-game-win-3.opus"> Вы кинули кинжал ' \
+                                                     f'дракону прямо в сердце, чтобы получить награду, скажите "получить награду"'
                             state.fights = 1
                             state.fight_step = 1
                             state.etap = 'ending'
@@ -811,7 +849,11 @@ def handle_dialog(req, res):
                             res["response"][
                                 "text"] = f"Враг выбросил {enem_atsh} и пробил ваш щит и нанёс вам {enem_atc} " \
                                           f"урона, и к сожалению вы погибли..." \
-                                          f" захотите пограть еще, я всегда тут"
+                                          f" захотите поиграть еще, я всегда тут"
+                            res["response"]["tts"] = f'<speaker audio="alice-sounds-game-loss-3.opus">'\
+                                                      f"Враг выбросил {enem_atsh} и пробил ваш щит и нанёс вам {enem_atc} " \
+                                                      f"урона, и к сожалению вы погибли..." \
+                                                      f" захотите поиграть еще, я всегда тут"
                             res['response']['end_session'] = True
                             state.state = {}
                             state.etap = "askname"
@@ -839,9 +881,7 @@ def handle_dialog(req, res):
                     state.stateen["enemfirst"] = elf2.firstkill
                     state.stateen["enemsecond"] = elf2.secondkill
                     state.stateen["enemthird"] = elf2.thirdkill
-                    if req["request"]["original_utterance"].lower() in ["продолжить приключение",
-                                                                        "продолжи приключение"]:
-                        #    res["response"]["text"] = f"Вы наткнулись на врага"
+                    if req["request"]["original_utterance"].lower() in ["продолжить приключение", "продолжи приключение"]:
                         res["response"]["text"] = f"Вы наткнулись на {state.stateen['enem']}\n" \
                                                   f"Параметры врага:\n" \
                                                   f"хп: {state.stateen['enem_hp']}\n" \
@@ -864,7 +904,7 @@ def handle_dialog(req, res):
                 elif state.fight_step == 3:
                     if req["request"]["original_utterance"].lower() in ["продолжить", "дальше"]:
                         if state.shi >= state.stateen["enemshi"]:
-                            res["response"]["text"] = "Вы пробили щит, тепрь бросьте кубик урона, чтобы это сделать " \
+                            res["response"]["text"] = "Вы пробили щит, теперь бросьте кубик урона, чтобы это сделать " \
                                                       "скажите 'нанести урон'"
                             state.fight_step = 4
                         else:
@@ -875,47 +915,47 @@ def handle_dialog(req, res):
                         res["response"]["text"] = "Напоминаю, чтобы продолжить скажите 'продолжить'"
                 elif state.fight_step == 4:
                     if req["request"]["original_utterance"].lower() in ["нанеси урон", "нанести урон"]:
-                        atc = random.randint(state.state["mina"], state.state["maxa"])
-                        state.stateen["enem_hp"] = state.stateen["enem_hp"] - atc
+                        state.atc = random.randint(state.state["mina"], state.state["maxa"])
+                        state.stateen["enem_hp"] = state.stateen["enem_hp"] - state.atc
                         res["response"][
-                            "text"] = f"тепрь скажите, какую атаку вы хотите использовать один два или три, \n" \
+                            "text"] = f"теперь скажите, какую атаку вы хотите использовать один два или три, \n" \
                                       f"чтобы посмотреть атаки, скажите 'способности эльфа'"
                         state.fight_step = 5
                     else:
                         res["response"]["text"] = "Напоминаю, чтобы нанести урон скажите 'нанести урон'"
                 elif state.fight_step == 5:
-                    if req["request"]["original_utterance"].lower() in ["1", "первая"]:
+                    if req["request"]["original_utterance"].lower() in ["1", "первая", "один"]:
                         if state.stateen["enem_hp"] > 0:
                             res["response"][
                                 "text"] = f"Вы нанесли {state.atc} урона, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
                             state.fight_step = -1
                         else:
                             res["response"][
-                                "text"] = f"{state.stateen['enemfirst']}. Вы узали, что в вашем королевстве беда! Казну обокрал " \
+                                "text"] = f"{state.stateen['enemfirst']}. Вы узнали, что в вашем королевстве беда! Казну обокрал " \
                                           f"дракон, чтобы найти логово дракона, скажите 'найти дракона'"
                             state.fights = 3
                             state.fight_step = 1
                             state.num.remove(n)
-                    elif req["request"]["original_utterance"].lower() in ["2", "вторая"]:
+                    elif req["request"]["original_utterance"].lower() in ["2", "вторая", "два"]:
                         if state.stateen["enem_hp"] > 0:
                             res["response"][
                                 "text"] = f"Вы нанесли {state.atc} урона, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
                             state.fight_step = -1
                         else:
                             res["response"][
-                                "text"] = f"{state.stateen['enemsecond']}. Вы узали, что в вашем королевстве беда! Казну обокрал " \
+                                "text"] = f"{state.stateen['enemsecond']}. Вы узнали, что в вашем королевстве беда! Казну обокрал " \
                                           f"дракон, чтобы найти логово дракона, скажите 'найти дракона'"
                             state.fights = 3
                             state.fight_step = 1
                             state.num.remove(n)
-                    elif req["request"]["original_utterance"].lower() in ["3", "третья"]:
+                    elif req["request"]["original_utterance"].lower() in ["3", "третья", "три"]:
                         if state.stateen["enem_hp"] > 0:
                             res["response"][
                                 "text"] = f"Вы нанесли {state.atc} урона, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
                             state.fight_step = -1
                         else:
                             res["response"][
-                                "text"] = f"{state.stateen['enemthird']}. Вы узали, что в вашем королевстве беда! Казну обокрал " \
+                                "text"] = f"{state.stateen['enemthird']}. Вы узнали, что в вашем королевстве беда! Казну обокрал " \
                                           f"дракон, чтобы найти логово дракона, скажите 'найти дракона'"
                             state.fights = 3
                             state.fight_step = 1
@@ -939,7 +979,11 @@ def handle_dialog(req, res):
                             res["response"][
                                 "text"] = f"Враг выбросил {enem_atsh} и пробил ваш щит и нанёс вам {enem_atc} " \
                                           f"урона, и к сожалению вы погибли..." \
-                                          f" захотите пограть еще, я всегда тут"
+                                          f" захотите поиграть еще, я всегда тут"
+                            res["response"]["tts"] = f'<speaker audio="alice-sounds-game-loss-3.opus">'\
+                                                      f"Враг выбросил {enem_atsh} и пробил ваш щит и нанёс вам {enem_atc} " \
+                                                      f"урона, и к сожалению вы погибли..." \
+                                                      f" захотите поиграть еще, я всегда тут"
                             res['response']['end_session'] = True
                             state.state = {}
                             state.etap = "askname"
@@ -969,7 +1013,6 @@ def handle_dialog(req, res):
                     state.stateen["enemthird"] = elf1.thirdkill
                     if req["request"]["original_utterance"].lower() in ["продолжить приключение",
                                                                         "продолжи приключение"]:
-                        #    res["response"]["text"] = f"Вы наткнулись на врага"
                         res["response"]["text"] = f"Вы наткнулись на {state.stateen['enem']}\n" \
                                                   f"Параметры врага:\n" \
                                                   f"хп: {state.stateen['enem_hp']}\n" \
@@ -992,7 +1035,7 @@ def handle_dialog(req, res):
                 elif state.fight_step == 3:
                     if req["request"]["original_utterance"].lower() in ["продолжить", "дальше"]:
                         if state.shi >= state.stateen["enemshi"]:
-                            res["response"]["text"] = "Вы пробили щит, тепрь бросьте кубик урона, чтобы это сделать " \
+                            res["response"]["text"] = "Вы пробили щит, теперь бросьте кубик урона, чтобы это сделать " \
                                                       "скажите 'нанести урон'"
                             state.fight_step = 4
                         else:
@@ -1003,16 +1046,16 @@ def handle_dialog(req, res):
                         res["response"]["text"] = "Напоминаю, чтобы продолжить скажите 'продолжить'"
                 elif state.fight_step == 4:
                     if req["request"]["original_utterance"].lower() in ["нанеси урон", "нанести урон"]:
-                        atc = random.randint(state.state["mina"], state.state["maxa"])
-                        state.stateen["enem_hp"] = state.stateen["enem_hp"] - atc
+                        state.atc = random.randint(state.state["mina"], state.state["maxa"])
+                        state.stateen["enem_hp"] = state.stateen["enem_hp"] - state.atc
                         res["response"][
-                            "text"] = f"тепрь скажите, какую атаку вы хотите использовать один два или три, \n" \
+                            "text"] = f"теперь скажите, какую атаку вы хотите использовать один два или три, \n" \
                                       f"чтобы посмотреть атаки, скажите 'способности эльфа'"
                         state.fight_step = 5
                     else:
                         res["response"]["text"] = "Напоминаю, чтобы нанести урон скажите 'нанести урон'"
                 elif state.fight_step == 5:
-                    if req["request"]["original_utterance"].lower() in ["1", "первая"]:
+                    if req["request"]["original_utterance"].lower() in ["1", "первая", "один"]:
                         if state.stateen["enem_hp"] > 0:
                             res["response"][
                                 "text"] = f"Вы нанесли {state.atc} урона, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
@@ -1023,7 +1066,7 @@ def handle_dialog(req, res):
                             state.fights = 2
                             state.fight_step = 1
                             state.num.remove(n)
-                    elif req["request"]["original_utterance"].lower() in ["2", "вторая"]:
+                    elif req["request"]["original_utterance"].lower() in ["2", "вторая", "два"]:
                         if state.stateen["enem_hp"] > 0:
                             res["response"][
                                 "text"] = f"Вы нанесли {state.atc} урона, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
@@ -1034,7 +1077,7 @@ def handle_dialog(req, res):
                             state.fights = 2
                             state.fight_step = 1
                             state.num.remove(n)
-                    elif req["request"]["original_utterance"].lower() in ["3", "третья"]:
+                    elif req["request"]["original_utterance"].lower() in ["3", "третья", "три"]:
                         if state.stateen["enem_hp"] > 0:
                             res["response"][
                                 "text"] = f"Вы нанесли {state.atc} урона, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
@@ -1047,7 +1090,7 @@ def handle_dialog(req, res):
                             state.num.remove(n)
                     else:
                         res["response"]["text"] = f"скажите, какую атаку вы хотите использовать один два или три, \n" \
-                                                  f"чтобы посмотреть атаки, скажите 'способности мага'"
+                                                  f"чтобы посмотреть атаки, скажите 'способности эльфа'"
 
                 elif state.fight_step == -1:
                     if req["request"]["original_utterance"].lower() in ["продолжить", "дальше"]:
@@ -1064,7 +1107,11 @@ def handle_dialog(req, res):
                             res["response"][
                                 "text"] = f"Враг выбросил {enem_atsh} и пробил ваш щит и нанёс вам {enem_atc} " \
                                           f"урона, и к сожалению вы погибли..." \
-                                          f" захотите пограть еще, я всегда тут"
+                                          f" захотите поиграть еще, я всегда тут"
+                            res["response"]["tts"] = f'<speaker audio="alice-sounds-game-loss-3.opus">'\
+                                                      f"Враг выбросил {enem_atsh} и пробил ваш щит и нанёс вам {enem_atc} " \
+                                                      f"урона, и к сожалению вы погибли..." \
+                                                      f" захотите поиграть еще, я всегда тут"
                             res['response']['end_session'] = True
                             state.state = {}
                             state.etap = "askname"
@@ -1093,7 +1140,6 @@ def handle_dialog(req, res):
                     state.stateen["enemsecond"] = elf0.secondkill
                     state.stateen["enemthird"] = elf0.thirdkill
                     if req["request"]["original_utterance"].lower() in ["начать приключение", "начни приключение"]:
-                        #    res["response"]["text"] = f"Вы наткнулись на врага"
                         res["response"]["text"] = f"Вы наткнулись на {state.stateen['enem']}\n" \
                                                   f"Параметры врага:\n" \
                                                   f"хп: {state.stateen['enem_hp']}\n" \
@@ -1116,7 +1162,7 @@ def handle_dialog(req, res):
                 elif state.fight_step == 3:
                     if req["request"]["original_utterance"].lower() in ["продолжить", "дальше"]:
                         if state.shi >= state.stateen["enemshi"]:
-                            res["response"]["text"] = "Вы пробили щит, тепрь бросьте кубик урона, чтобы это сделать " \
+                            res["response"]["text"] = "Вы пробили щит, теперь бросьте кубик урона, чтобы это сделать " \
                                                       "скажите 'нанести урон'"
                             state.fight_step = 4
                         else:
@@ -1127,16 +1173,16 @@ def handle_dialog(req, res):
                         res["response"]["text"] = "Напоминаю, чтобы продолжить скажите 'продолжить'"
                 elif state.fight_step == 4:
                     if req["request"]["original_utterance"].lower() in ["нанеси урон", "нанести урон"]:
-                        atc = random.randint(state.state["mina"], state.state["maxa"])
-                        state.stateen["enem_hp"] = state.stateen["enem_hp"] - atc
+                        state.atc = random.randint(state.state["mina"], state.state["maxa"])
+                        state.stateen["enem_hp"] = state.stateen["enem_hp"] - state.atc
                         res["response"][
-                            "text"] = f"тепрь скажите, какую атаку вы хотите использовать один два или три, \n" \
+                            "text"] = f"теперь скажите, какую атаку вы хотите использовать один два или три, \n" \
                                       f"чтобы посмотреть атаки, скажите 'способности эльфа'"
                         state.fight_step = 5
                     else:
                         res["response"]["text"] = "Напоминаю, чтобы нанести урон скажите 'нанести урон'"
                 elif state.fight_step == 5:
-                    if req["request"]["original_utterance"].lower() in ["1", "первая"]:
+                    if req["request"]["original_utterance"].lower() in ["1", "первая", "один"]:
                         if state.stateen["enem_hp"] > 0:
                             res["response"][
                                 "text"] = f"Вы нанесли {state.atc} урона, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
@@ -1147,7 +1193,7 @@ def handle_dialog(req, res):
                             state.fights = 1
                             state.fight_step = 1
                             state.num.remove(n)
-                    elif req["request"]["original_utterance"].lower() in ["2", "вторая"]:
+                    elif req["request"]["original_utterance"].lower() in ["2", "вторая", "два"]:
                         if state.stateen["enem_hp"] > 0:
                             res["response"][
                                 "text"] = f"Вы нанесли {state.atc} урона, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
@@ -1158,7 +1204,7 @@ def handle_dialog(req, res):
                             state.fights = 1
                             state.fight_step = 1
                             state.num.remove(n)
-                    elif req["request"]["original_utterance"].lower() in ["3", "третья"]:
+                    elif req["request"]["original_utterance"].lower() in ["3", "третья", "три"]:
                         if state.stateen["enem_hp"] > 0:
                             res["response"][
                                 "text"] = f"Вы нанесли {state.atc} урона, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
@@ -1171,7 +1217,7 @@ def handle_dialog(req, res):
                             state.num.remove(n)
                     else:
                         res["response"]["text"] = f"скажите, какую атаку вы хотите использовать один два или три, \n" \
-                                                  f"чтобы посмотреть атаки, скажите 'способности мага'"
+                                                  f"чтобы посмотреть атаки, скажите 'способности эльфа'"
 
                 elif state.fight_step == -1:
                     if req["request"]["original_utterance"].lower() in ["продолжить", "дальше"]:
@@ -1188,7 +1234,11 @@ def handle_dialog(req, res):
                             res["response"][
                                 "text"] = f"Враг выбросил {enem_atsh} и пробил ваш щит и нанёс вам {enem_atc} " \
                                           f"урона, и к сожалению вы погибли..." \
-                                          f" захотите пограть еще, я всегда тут"
+                                          f" захотите поиграть еще, я всегда тут"
+                            res["response"]["tts"] = f'<speaker audio="alice-sounds-game-loss-3.opus">'\
+                                                      f"Враг выбросил {enem_atsh} и пробил ваш щит и нанёс вам {enem_atc} " \
+                                                      f"урона, и к сожалению вы погибли..." \
+                                                      f" захотите поиграть еще, я всегда тут"
                             res['response']['end_session'] = True
                             state.state = {}
                             state.etap = "askname"
@@ -1218,7 +1268,6 @@ def handle_dialog(req, res):
                     state.stateen["enemsecond"] = barbarian3.secondkill
                     state.stateen["enemthird"] = barbarian3.thirdkill
                     if req["request"]["original_utterance"].lower() in ["найти дракона", "искать дракона"]:
-                        #    res["response"]["text"] = f"Вы наткнулись на врага"
                         res["response"]["text"] = f"Вы встретили огромного дракона, сторожащего золото\n" \
                                                   f"Параметры дракона:\n" \
                                                   f"хп: {state.stateen['enem_hp']}\n" \
@@ -1241,7 +1290,7 @@ def handle_dialog(req, res):
                 elif state.fight_step == 3:
                     if req["request"]["original_utterance"].lower() in ["продолжить", "дальше"]:
                         if state.shi >= state.stateen["enemshi"]:
-                            res["response"]["text"] = "Вы пробили щит, тепрь бросьте кубик урона, чтобы это сделать " \
+                            res["response"]["text"] = "Вы пробили щит, теперь бросьте кубик урона, чтобы это сделать " \
                                                       "скажите 'нанести урон'"
                             state.fight_step = 4
                         else:
@@ -1252,45 +1301,48 @@ def handle_dialog(req, res):
                         res["response"]["text"] = "Напоминаю, чтобы продолжить скажите 'продолжить'"
                 elif state.fight_step == 4:
                     if req["request"]["original_utterance"].lower() in ["нанеси урон", "нанести урон"]:
-                        atc = random.randint(state.state["mina"], state.state["maxa"])
-                        state.stateen["enem_hp"] = state.stateen["enem_hp"] - atc
+                        state.atc = random.randint(state.state["mina"], state.state["maxa"])
+                        state.stateen["enem_hp"] = state.stateen["enem_hp"] - state.atc
                         res["response"][
-                            "text"] = f"тепрь скажите, какую атаку вы хотите использовать один два или три, \n" \
-                                      f"чтобы посмотреть атаки, скажите 'способности мага'"
+                            "text"] = f"теперь скажите, какую атаку вы хотите использовать один два или три, \n" \
+                                      f"чтобы посмотреть атаки, скажите 'способности варвара'"
                         state.fight_step = 5
                     else:
                         res["response"]["text"] = "Напоминаю, чтобы нанести урон скажите 'нанести урон'"
                 elif state.fight_step == 5:
-                    if req["request"]["original_utterance"].lower() in ["1", "первая"]:
+                    if req["request"]["original_utterance"].lower() in ["1", "первая", "один"]:
                         if state.stateen["enem_hp"] > 0:
                             res["response"][
                                 "text"] = f"Вы нанесли {state.atc} урона, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
                             state.fight_step = -1
                         else:
-                            res["response"][
-                                "text"] = f"Вы испепелили злобного дракона, чтобы получить награду, скажите 'получить награду'"
+                            res["response"]["text"] = f"Вы отрубили голову дракону, чтобы получить награду, скажите 'получить награду'"
+                            res["response"]["tts"] = f'<speaker audio="alice-sounds-game-win-3.opus"> Вы отрубили голову' \
+                                                     f' дракону, чтобы получить награду, скажите "получить награду"'
                             state.fights = 1
                             state.fight_step = 1
                             state.etap = 'ending'
-                    elif req["request"]["original_utterance"].lower() in ["2", "вторая"]:
+                    elif req["request"]["original_utterance"].lower() in ["2", "вторая", "два"]:
                         if state.stateen["enem_hp"] > 0:
                             res["response"][
                                 "text"] = f"Вы нанесли {state.atc} урона дракону, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
                             state.fight_step = -1
                         else:
-                            res["response"][
-                                "text"] = f"Вы уничтожили злобного дракона энергосферой, чтобы получить награду, скажите 'получить награду'"
+                            res["response"]["text"] = f"Вы попали топором дракону в голову, чтобы получить награду, скажите 'получить награду'"
+                            res["response"]["tts"] = f'<speaker audio="alice-sounds-game-win-3.opus">Вы попали топором дракону ' \
+                                                     f'в голову, чтобы получить награду, скажите "получить награду"'
                             state.fights = 1
                             state.fight_step = 1
                             state.etap = 'ending'
-                    elif req["request"]["original_utterance"].lower() in ["3", "третья"]:
+                    elif req["request"]["original_utterance"].lower() in ["3", "третья", "три"]:
                         if state.stateen["enem_hp"] > 0:
                             res["response"][
                                 "text"] = f"Вы нанесли {state.atc} урона, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
                             state.fight_step = -1
                         else:
-                            res["response"][
-                                "text"] = f"Вы разорвали дракона с помощью теликинеза, чтобы получить награду, скажите 'получить награду'"
+                            res["response"]["text"] = f"Вы раскрошили голову дракону моргенштерном, чтобы получить награду, скажите 'получить награду'"
+                            res["response"]["tts"] = f'<speaker audio="alice-sounds-game-win-3.opus"> Вы раскрошили голову дракону' \
+                                                     f' моргенштерном, чтобы получить награду, скажите "получить награду"'
                             state.fights = 1
                             state.fight_step = 1
                             state.etap = 'ending'
@@ -1313,7 +1365,11 @@ def handle_dialog(req, res):
                             res["response"][
                                 "text"] = f"Враг выбросил {enem_atsh} и пробил ваш щит и нанёс вам {enem_atc} " \
                                           f"урона, и к сожалению вы погибли..." \
-                                          f" захотите пограть еще, я всегда тут"
+                                          f" захотите поиграть еще, я всегда тут"
+                            res["response"]["tts"] = f'<speaker audio="alice-sounds-game-loss-3.opus">'\
+                                                      f"Враг выбросил {enem_atsh} и пробил ваш щит и нанёс вам {enem_atc} " \
+                                                      f"урона, и к сожалению вы погибли..." \
+                                                      f" захотите поиграть еще, я всегда тут"
                             res['response']['end_session'] = True
                             state.state = {}
                             state.etap = "askname"
@@ -1343,7 +1399,6 @@ def handle_dialog(req, res):
                     state.stateen["enemthird"] = barbarian2.thirdkill
                     if req["request"]["original_utterance"].lower() in ["продолжить приключение",
                                                                         "продолжи приключение"]:
-                        #    res["response"]["text"] = f"Вы наткнулись на врага"
                         res["response"]["text"] = f"Вы наткнулись на {state.stateen['enem']}\n" \
                                                   f"Параметры врага:\n" \
                                                   f"хп: {state.stateen['enem_hp']}\n" \
@@ -1366,7 +1421,7 @@ def handle_dialog(req, res):
                 elif state.fight_step == 3:
                     if req["request"]["original_utterance"].lower() in ["продолжить", "дальше"]:
                         if state.shi >= state.stateen["enemshi"]:
-                            res["response"]["text"] = "Вы пробили щит, тепрь бросьте кубик урона, чтобы это сделать " \
+                            res["response"]["text"] = "Вы пробили щит, теперь бросьте кубик урона, чтобы это сделать " \
                                                       "скажите 'нанести урон'"
                             state.fight_step = 4
                         else:
@@ -1377,54 +1432,54 @@ def handle_dialog(req, res):
                         res["response"]["text"] = "Напоминаю, чтобы продолжить скажите 'продолжить'"
                 elif state.fight_step == 4:
                     if req["request"]["original_utterance"].lower() in ["нанеси урон", "нанести урон"]:
-                        atc = random.randint(state.state["mina"], state.state["maxa"])
-                        state.stateen["enem_hp"] = state.stateen["enem_hp"] - atc
+                        state.atc = random.randint(state.state["mina"], state.state["maxa"])
+                        state.stateen["enem_hp"] = state.stateen["enem_hp"] - state.atc
                         res["response"][
-                            "text"] = f"тепрь скажите, какую атаку вы хотите использовать один два или три, \n" \
+                            "text"] = f"теперь скажите, какую атаку вы хотите использовать один два или три, \n" \
                                       f"чтобы посмотреть атаки, скажите 'способности варвара'"
                         state.fight_step = 5
                     else:
                         res["response"]["text"] = "Напоминаю, чтобы нанести урон скажите 'нанести урон'"
                 elif state.fight_step == 5:
-                    if req["request"]["original_utterance"].lower() in ["1", "первая"]:
+                    if req["request"]["original_utterance"].lower() in ["1", "первая", "один"]:
                         if state.stateen["enem_hp"] > 0:
                             res["response"][
                                 "text"] = f"Вы нанесли {state.atc} урона, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
                             state.fight_step = -1
                         else:
                             res["response"][
-                                "text"] = f"{state.stateen['enemfirst']}. Вы узали, что в вашем королевстве беда! Казну обокрал " \
+                                "text"] = f"{state.stateen['enemfirst']}. Вы узнали, что в вашем королевстве беда! Казну обокрал " \
                                           f"дракон, чтобы найти логово дракона, скажите 'найти дракона'"
                             state.fights = 3
                             state.fight_step = 1
                             state.num.remove(n)
-                    elif req["request"]["original_utterance"].lower() in ["2", "вторая"]:
+                    elif req["request"]["original_utterance"].lower() in ["2", "вторая", "два"]:
                         if state.stateen["enem_hp"] > 0:
                             res["response"][
                                 "text"] = f"Вы нанесли {state.atc} урона, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
                             state.fight_step = -1
                         else:
                             res["response"][
-                                "text"] = f"{state.stateen['enemsecond']}. Вы узали, что в вашем королевстве беда! Казну обокрал " \
+                                "text"] = f"{state.stateen['enemsecond']}. Вы узнали, что в вашем королевстве беда! Казну обокрал " \
                                           f"дракон, чтобы найти логово дракона, скажите 'найти дракона'"
                             state.fights = 3
                             state.fight_step = 1
                             state.num.remove(n)
-                    elif req["request"]["original_utterance"].lower() in ["3", "третья"]:
+                    elif req["request"]["original_utterance"].lower() in ["3", "третья", "три"]:
                         if state.stateen["enem_hp"] > 0:
                             res["response"][
                                 "text"] = f"Вы нанесли {state.atc} урона, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
                             state.fight_step = -1
                         else:
                             res["response"][
-                                "text"] = f"{state.stateen['enemthird']}. Вы узали, что в вашем королевстве беда! Казну обокрал " \
+                                "text"] = f"{state.stateen['enemthird']}. Вы узнали, что в вашем королевстве беда! Казну обокрал " \
                                           f"дракон, чтобы найти логово дракона, скажите 'найти дракона'"
                             state.fights = 3
                             state.fight_step = 1
                             state.num.remove(n)
                     else:
                         res["response"]["text"] = f"скажите, какую атаку вы хотите использовать один два или три, \n" \
-                                                  f"чтобы посмотреть атаки, скажите 'способности мага'"
+                                                  f"чтобы посмотреть атаки, скажите 'способности варвара'"
 
                 elif state.fight_step == -1:
                     if req["request"]["original_utterance"].lower() in ["продолжить", "дальше"]:
@@ -1441,7 +1496,11 @@ def handle_dialog(req, res):
                             res["response"][
                                 "text"] = f"Враг выбросил {enem_atsh} и пробил ваш щит и нанёс вам {enem_atc} " \
                                           f"урона, и к сожалению вы погибли..." \
-                                          f" захотите пограть еще, я всегда тут"
+                                          f" захотите поиграть еще, я всегда тут"
+                            res["response"]["tts"] = f'<speaker audio="alice-sounds-game-loss-3.opus">'\
+                                                      f"Враг выбросил {enem_atsh} и пробил ваш щит и нанёс вам {enem_atc} " \
+                                                      f"урона, и к сожалению вы погибли..." \
+                                                      f" захотите поиграть еще, я всегда тут"
                             res['response']['end_session'] = True
                             state.state = {}
                             state.etap = "askname"
@@ -1471,7 +1530,6 @@ def handle_dialog(req, res):
                     state.stateen["enemthird"] = barbarian1.thirdkill
                     if req["request"]["original_utterance"].lower() in ["продолжить приключение",
                                                                         "продолжи приключение"]:
-                        #    res["response"]["text"] = f"Вы наткнулись на врага"
                         res["response"]["text"] = f"Вы наткнулись на {state.stateen['enem']}\n" \
                                                   f"Параметры врага:\n" \
                                                   f"хп: {state.stateen['enem_hp']}\n" \
@@ -1494,7 +1552,7 @@ def handle_dialog(req, res):
                 elif state.fight_step == 3:
                     if req["request"]["original_utterance"].lower() in ["продолжить", "дальше"]:
                         if state.shi >= state.stateen["enemshi"]:
-                            res["response"]["text"] = "Вы пробили щит, тепрь бросьте кубик урона, чтобы это сделать " \
+                            res["response"]["text"] = "Вы пробили щит, теперь бросьте кубик урона, чтобы это сделать " \
                                                       "скажите 'нанести урон'"
                             state.fight_step = 4
                         else:
@@ -1505,16 +1563,16 @@ def handle_dialog(req, res):
                         res["response"]["text"] = "Напоминаю, чтобы продолжить скажите 'продолжить'"
                 elif state.fight_step == 4:
                     if req["request"]["original_utterance"].lower() in ["нанеси урон", "нанести урон"]:
-                        atc = random.randint(state.state["mina"], state.state["maxa"])
-                        state.stateen["enem_hp"] = state.stateen["enem_hp"] - atc
+                        state.atc = random.randint(state.state["mina"], state.state["maxa"])
+                        state.stateen["enem_hp"] = state.stateen["enem_hp"] - state.atc
                         res["response"][
-                            "text"] = f"тепрь скажите, какую атаку вы хотите использовать один два или три, \n" \
+                            "text"] = f"теперь скажите, какую атаку вы хотите использовать один два или три, \n" \
                                       f"чтобы посмотреть атаки, скажите 'способности варвара'"
                         state.fight_step = 5
                     else:
                         res["response"]["text"] = "Напоминаю, чтобы нанести урон скажите 'нанести урон'"
                 elif state.fight_step == 5:
-                    if req["request"]["original_utterance"].lower() in ["1", "первая"]:
+                    if req["request"]["original_utterance"].lower() in ["1", "первая", "один"]:
                         if state.stateen["enem_hp"] > 0:
                             res["response"][
                                 "text"] = f"Вы нанесли {state.atc} урона, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
@@ -1525,7 +1583,7 @@ def handle_dialog(req, res):
                             state.fights = 2
                             state.fight_step = 1
                             state.num.remove(n)
-                    elif req["request"]["original_utterance"].lower() in ["2", "вторая"]:
+                    elif req["request"]["original_utterance"].lower() in ["2", "вторая", "два"]:
                         if state.stateen["enem_hp"] > 0:
                             res["response"][
                                 "text"] = f"Вы нанесли {state.atc} урона, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
@@ -1536,7 +1594,7 @@ def handle_dialog(req, res):
                             state.fights = 2
                             state.fight_step = 1
                             state.num.remove(n)
-                    elif req["request"]["original_utterance"].lower() in ["3", "третья"]:
+                    elif req["request"]["original_utterance"].lower() in ["3", "третья", "три"]:
                         if state.stateen["enem_hp"] > 0:
                             res["response"][
                                 "text"] = f"Вы нанесли {state.atc} урона, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
@@ -1549,7 +1607,7 @@ def handle_dialog(req, res):
                             state.num.remove(n)
                     else:
                         res["response"]["text"] = f"скажите, какую атаку вы хотите использовать один два или три, \n" \
-                                                  f"чтобы посмотреть атаки, скажите 'способности мага'"
+                                                  f"чтобы посмотреть атаки, скажите 'способности варвара'"
 
                 elif state.fight_step == -1:
                     if req["request"]["original_utterance"].lower() in ["продолжить", "дальше"]:
@@ -1566,7 +1624,11 @@ def handle_dialog(req, res):
                             res["response"][
                                 "text"] = f"Враг выбросил {enem_atsh} и пробил ваш щит и нанёс вам {enem_atc} " \
                                           f"урона, и к сожалению вы погибли..." \
-                                          f" захотите пограть еще, я всегда тут"
+                                          f" захотите поиграть еще, я всегда тут"
+                            res["response"]["tts"] = f'<speaker audio="alice-sounds-game-loss-3.opus">'\
+                                                      f"Враг выбросил {enem_atsh} и пробил ваш щит и нанёс вам {enem_atc} " \
+                                                      f"урона, и к сожалению вы погибли..." \
+                                                      f" захотите поиграть еще, я всегда тут"
                             res['response']['end_session'] = True
                             state.state = {}
                             state.etap = "askname"
@@ -1595,7 +1657,6 @@ def handle_dialog(req, res):
                     state.stateen["enemsecond"] = barbarian0.secondkill
                     state.stateen["enemthird"] = barbarian0.thirdkill
                     if req["request"]["original_utterance"].lower() in ["начать приключение", "начни приключение"]:
-                        #    res["response"]["text"] = f"Вы наткнулись на врага"
                         res["response"]["text"] = f"Вы наткнулись на {state.stateen['enem']}\n" \
                                                   f"Параметры врага:\n" \
                                                   f"хп: {state.stateen['enem_hp']}\n" \
@@ -1618,7 +1679,7 @@ def handle_dialog(req, res):
                 elif state.fight_step == 3:
                     if req["request"]["original_utterance"].lower() in ["продолжить", "дальше"]:
                         if state.shi >= state.stateen["enemshi"]:
-                            res["response"]["text"] = "Вы пробили щит, тепрь бросьте кубик урона, чтобы это сделать " \
+                            res["response"]["text"] = "Вы пробили щит, теперь бросьте кубик урона, чтобы это сделать " \
                                                       "скажите 'нанести урон'"
                             state.fight_step = 4
                         else:
@@ -1629,16 +1690,16 @@ def handle_dialog(req, res):
                         res["response"]["text"] = "Напоминаю, чтобы продолжить скажите 'продолжить'"
                 elif state.fight_step == 4:
                     if req["request"]["original_utterance"].lower() in ["нанеси урон", "нанести урон"]:
-                        atc = random.randint(state.state["mina"], state.state["maxa"])
-                        state.stateen["enem_hp"] = state.stateen["enem_hp"] - atc
+                        state.atc = random.randint(state.state["mina"], state.state["maxa"])
+                        state.stateen["enem_hp"] = state.stateen["enem_hp"] - state.atc
                         res["response"][
-                            "text"] = f"тепрь скажите, какую атаку вы хотите использовать один два или три, \n" \
+                            "text"] = f"теперь скажите, какую атаку вы хотите использовать один два или три, \n" \
                                       f"чтобы посмотреть атаки, скажите 'способности варвара'"
                         state.fight_step = 5
                     else:
                         res["response"]["text"] = "Напоминаю, чтобы нанести урон скажите 'нанести урон'"
                 elif state.fight_step == 5:
-                    if req["request"]["original_utterance"].lower() in ["1", "первая"]:
+                    if req["request"]["original_utterance"].lower() in ["1", "первая", "один"]:
                         if state.stateen["enem_hp"] > 0:
                             res["response"][
                                 "text"] = f"Вы нанесли {state.atc} урона, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
@@ -1649,7 +1710,7 @@ def handle_dialog(req, res):
                             state.fights = 1
                             state.fight_step = 1
                             state.num.remove(n)
-                    elif req["request"]["original_utterance"].lower() in ["2", "вторая"]:
+                    elif req["request"]["original_utterance"].lower() in ["2", "вторая", "два"]:
                         if state.stateen["enem_hp"] > 0:
                             res["response"][
                                 "text"] = f"Вы нанесли {state.atc} урона, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
@@ -1660,7 +1721,7 @@ def handle_dialog(req, res):
                             state.fights = 1
                             state.fight_step = 1
                             state.num.remove(n)
-                    elif req["request"]["original_utterance"].lower() in ["3", "третья"]:
+                    elif req["request"]["original_utterance"].lower() in ["3", "третья", "три"]:
                         if state.stateen["enem_hp"] > 0:
                             res["response"][
                                 "text"] = f"Вы нанесли {state.atc} урона, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
@@ -1673,7 +1734,7 @@ def handle_dialog(req, res):
                             state.num.remove(n)
                     else:
                         res["response"]["text"] = f"скажите, какую атаку вы хотите использовать один два или три, \n" \
-                                                  f"чтобы посмотреть атаки, скажите 'способности мага'"
+                                                  f"чтобы посмотреть атаки, скажите 'способности врвара'"
 
                 elif state.fight_step == -1:
                     if req["request"]["original_utterance"].lower() in ["продолжить", "дальше"]:
@@ -1690,7 +1751,11 @@ def handle_dialog(req, res):
                             res["response"][
                                 "text"] = f"Враг выбросил {enem_atsh} и пробил ваш щит и нанёс вам {enem_atc} " \
                                           f"урона, и к сожалению вы погибли..." \
-                                          f" захотите пограть еще, я всегда тут"
+                                          f" захотите поиграть еще, я всегда тут"
+                            res["response"]["tts"] = f'<speaker audio="alice-sounds-game-loss-3.opus">'\
+                                                      f"Враг выбросил {enem_atsh} и пробил ваш щит и нанёс вам {enem_atc} " \
+                                                      f"урона, и к сожалению вы погибли..." \
+                                                      f" захотите поиграть еще, я всегда тут"
                             res['response']['end_session'] = True
                             state.state = {}
                             state.etap = "askname"
@@ -1720,7 +1785,6 @@ def handle_dialog(req, res):
                     state.stateen["enemsecond"] = knight3.secondkill
                     state.stateen["enemthird"] = knight3.thirdkill
                     if req["request"]["original_utterance"].lower() in ["найти дракона", "искать дракона"]:
-                        #    res["response"]["text"] = f"Вы наткнулись на врага"
                         res["response"]["text"] = f"Вы встретили огромного дракона, сторожащего золото\n" \
                                                   f"Параметры дракона:\n" \
                                                   f"хп: {state.stateen['enem_hp']}\n" \
@@ -1743,7 +1807,7 @@ def handle_dialog(req, res):
                 elif state.fight_step == 3:
                     if req["request"]["original_utterance"].lower() in ["продолжить", "дальше"]:
                         if state.shi >= state.stateen["enemshi"]:
-                            res["response"]["text"] = "Вы пробили щит, тепрь бросьте кубик урона, чтобы это сделать " \
+                            res["response"]["text"] = "Вы пробили щит, теперь бросьте кубик урона, чтобы это сделать " \
                                                       "скажите 'нанести урон'"
                             state.fight_step = 4
                         else:
@@ -1754,45 +1818,47 @@ def handle_dialog(req, res):
                         res["response"]["text"] = "Напоминаю, чтобы продолжить скажите 'продолжить'"
                 elif state.fight_step == 4:
                     if req["request"]["original_utterance"].lower() in ["нанеси урон", "нанести урон"]:
-                        atc = random.randint(state.state["mina"], state.state["maxa"])
-                        state.stateen["enem_hp"] = state.stateen["enem_hp"] - atc
+                        state.atc = random.randint(state.state["mina"], state.state["maxa"])
+                        state.stateen["enem_hp"] = state.stateen["enem_hp"] - state.atc
                         res["response"][
-                            "text"] = f"тепрь скажите, какую атаку вы хотите использовать один два или три, \n" \
-                                      f"чтобы посмотреть атаки, скажите 'способности мага'"
+                            "text"] = f"теперь скажите, какую атаку вы хотите использовать один два или три, \n" \
+                                      f"чтобы посмотреть атаки, скажите 'способности рыцаря'"
                         state.fight_step = 5
                     else:
                         res["response"]["text"] = "Напоминаю, чтобы нанести урон скажите 'нанести урон'"
                 elif state.fight_step == 5:
-                    if req["request"]["original_utterance"].lower() in ["1", "первая"]:
+                    if req["request"]["original_utterance"].lower() in ["1", "первая", "один"]:
                         if state.stateen["enem_hp"] > 0:
                             res["response"][
                                 "text"] = f"Вы нанесли {state.atc} урона, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
                             state.fight_step = -1
                         else:
-                            res["response"][
-                                "text"] = f"Вы испепелили злобного дракона, чтобы получить награду, скажите 'получить награду'"
+                            res["response"]["text"] = f"Вы отрубили голову дракону, чтобы получить награду, скажите 'получить награду'"
+                            res["response"]["tts"] = f'<speaker audio="alice-sounds-game-win-3.opus"> Вы отрубили голову дракону, ' \
+                                                     f'чтобы получить награду, скажите "получить награду"'
                             state.fights = 1
                             state.fight_step = 1
                             state.etap = 'ending'
-                    elif req["request"]["original_utterance"].lower() in ["2", "вторая"]:
+                    elif req["request"]["original_utterance"].lower() in ["2", "вторая", "два"]:
                         if state.stateen["enem_hp"] > 0:
                             res["response"][
                                 "text"] = f"Вы нанесли {state.atc} урона дракону, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
                             state.fight_step = -1
                         else:
-                            res["response"][
-                                "text"] = f"Вы уничтожили злобного дракона энергосферой, чтобы получить награду, скажите 'получить награду'"
+                            res["response"]["text"] = f"Вы задушили дракона, придавив его шею щитом, чтобы получить награду, скажите 'получить награду'"
+                            res["response"]["tts"] = f'<speaker audio="alice-sounds-game-win-3.opus"> Вы задушили дракона, ' \
+                                                     f'придавив его шею щитом, чтобы получить награду, скажите "получить награду"'
                             state.fights = 1
                             state.fight_step = 1
                             state.etap = 'ending'
-                    elif req["request"]["original_utterance"].lower() in ["3", "третья"]:
+                    elif req["request"]["original_utterance"].lower() in ["3", "третья", "три"]:
                         if state.stateen["enem_hp"] > 0:
-                            res["response"][
-                                "text"] = f"Вы нанесли {state.atc} урона, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
+                            res["response"]["text"] = f"Вы нанесли {state.atc} урона, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
                             state.fight_step = -1
                         else:
-                            res["response"][
-                                "text"] = f"Вы разорвали дракона с помощью теликинеза, чтобы получить награду, скажите 'получить награду'"
+                            res["response"]["text"] = f"Вы проткнули дракона копьем, чтобы получить награду, скажите 'получить награду'"
+                            res["response"]["tts"] = f'<speaker audio="alice-sounds-game-win-3.opus"> Вы проткнули дракона копьем,' \
+                                                     f' чтобы получить награду, скажите "получить награду"'
                             state.fights = 1
                             state.fight_step = 1
                             state.etap = 'ending'
@@ -1815,7 +1881,11 @@ def handle_dialog(req, res):
                             res["response"][
                                 "text"] = f"Враг выбросил {enem_atsh} и пробил ваш щит и нанёс вам {enem_atc} " \
                                           f"урона, и к сожалению вы погибли..." \
-                                          f" захотите пограть еще, я всегда тут"
+                                          f" захотите поиграть еще, я всегда тут"
+                            res["response"]["tts"] = f'<speaker audio="alice-sounds-game-loss-3.opus">'\
+                                                      f"Враг выбросил {enem_atsh} и пробил ваш щит и нанёс вам {enem_atc} " \
+                                                      f"урона, и к сожалению вы погибли..." \
+                                                      f" захотите поиграть еще, я всегда тут"
                             res['response']['end_session'] = True
                             state.state = {}
                             state.etap = "askname"
@@ -1845,7 +1915,6 @@ def handle_dialog(req, res):
                     state.stateen["enemthird"] = knight2.thirdkill
                     if req["request"]["original_utterance"].lower() in ["продолжить приключение",
                                                                         "продолжи приключение"]:
-                        #    res["response"]["text"] = f"Вы наткнулись на врага"
                         res["response"]["text"] = f"Вы наткнулись на {state.stateen['enem']}\n" \
                                                   f"Параметры врага:\n" \
                                                   f"хп: {state.stateen['enem_hp']}\n" \
@@ -1868,7 +1937,7 @@ def handle_dialog(req, res):
                 elif state.fight_step == 3:
                     if req["request"]["original_utterance"].lower() in ["продолжить", "дальше"]:
                         if state.shi >= state.stateen["enemshi"]:
-                            res["response"]["text"] = "Вы пробили щит, тепрь бросьте кубик урона, чтобы это сделать " \
+                            res["response"]["text"] = "Вы пробили щит, теперь бросьте кубик урона, чтобы это сделать " \
                                                       "скажите 'нанести урон'"
                             state.fight_step = 4
                         else:
@@ -1879,54 +1948,54 @@ def handle_dialog(req, res):
                         res["response"]["text"] = "Напоминаю, чтобы продолжить скажите 'продолжить'"
                 elif state.fight_step == 4:
                     if req["request"]["original_utterance"].lower() in ["нанеси урон", "нанести урон"]:
-                        atc = random.randint(state.state["mina"], state.state["maxa"])
-                        state.stateen["enem_hp"] = state.stateen["enem_hp"] - atc
+                        state.atc = random.randint(state.state["mina"], state.state["maxa"])
+                        state.stateen["enem_hp"] = state.stateen["enem_hp"] - state.atc
                         res["response"][
-                            "text"] = f"тепрь скажите, какую атаку вы хотите использовать один два или три, \n" \
+                            "text"] = f"теперь скажите, какую атаку вы хотите использовать один два или три, \n" \
                                       f"чтобы посмотреть атаки, скажите 'способности рыцаря'"
                         state.fight_step = 5
                     else:
                         res["response"]["text"] = "Напоминаю, чтобы нанести урон скажите 'нанести урон'"
                 elif state.fight_step == 5:
-                    if req["request"]["original_utterance"].lower() in ["1", "первая"]:
+                    if req["request"]["original_utterance"].lower() in ["1", "первая", "один"]:
                         if state.stateen["enem_hp"] > 0:
                             res["response"][
                                 "text"] = f"Вы нанесли {state.atc} урона, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
                             state.fight_step = -1
                         else:
                             res["response"][
-                                "text"] = f"{state.stateen['enemfirst']}. Вы узали, что в вашем королевстве беда! Казну обокрал " \
+                                "text"] = f"{state.stateen['enemfirst']}. Вы узнали, что в вашем королевстве беда! Казну обокрал " \
                                           f"дракон, чтобы найти логово дракона, скажите 'найти дракона'"
                             state.fights = 3
                             state.fight_step = 1
                             state.num.remove(n)
-                    elif req["request"]["original_utterance"].lower() in ["2", "вторая"]:
+                    elif req["request"]["original_utterance"].lower() in ["2", "вторая", "два"]:
                         if state.stateen["enem_hp"] > 0:
                             res["response"][
                                 "text"] = f"Вы нанесли {state.atc} урона, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
                             state.fight_step = -1
                         else:
                             res["response"][
-                                "text"] = f"{state.stateen['enemsecond']}. Вы узали, что в вашем королевстве беда! Казну обокрал " \
+                                "text"] = f"{state.stateen['enemsecond']}. Вы узнали, что в вашем королевстве беда! Казну обокрал " \
                                           f"дракон, чтобы найти логово дракона, скажите 'найти дракона'"
                             state.fights = 3
                             state.fight_step = 1
                             state.num.remove(n)
-                    elif req["request"]["original_utterance"].lower() in ["3", "третья"]:
+                    elif req["request"]["original_utterance"].lower() in ["3", "третья", "три"]:
                         if state.stateen["enem_hp"] > 0:
                             res["response"][
                                 "text"] = f"Вы нанесли {state.atc} урона, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
                             state.fight_step = -1
                         else:
                             res["response"][
-                                "text"] = f"{state.stateen['enemthird']}. Вы узали, что в вашем королевстве беда! Казну обокрал " \
+                                "text"] = f"{state.stateen['enemthird']}. Вы узнали, что в вашем королевстве беда! Казну обокрал " \
                                           f"дракон, чтобы найти логово дракона, скажите 'найти дракона'"
                             state.fights = 3
                             state.fight_step = 1
                             state.num.remove(n)
                     else:
                         res["response"]["text"] = f"скажите, какую атаку вы хотите использовать один два или три, \n" \
-                                                  f"чтобы посмотреть атаки, скажите 'способности мага'"
+                                                  f"чтобы посмотреть атаки, скажите 'способности рыцаря'"
 
                 elif state.fight_step == -1:
                     if req["request"]["original_utterance"].lower() in ["продолжить", "дальше"]:
@@ -1943,7 +2012,11 @@ def handle_dialog(req, res):
                             res["response"][
                                 "text"] = f"Враг выбросил {enem_atsh} и пробил ваш щит и нанёс вам {enem_atc} " \
                                           f"урона, и к сожалению вы погибли..." \
-                                          f" захотите пограть еще, я всегда тут"
+                                          f" захотите поиграть еще, я всегда тут"
+                            res["response"]["tts"] = f'<speaker audio="alice-sounds-game-loss-3.opus">'\
+                                                      f"Враг выбросил {enem_atsh} и пробил ваш щит и нанёс вам {enem_atc} " \
+                                                      f"урона, и к сожалению вы погибли..." \
+                                                      f" захотите поиграть еще, я всегда тут"
                             res['response']['end_session'] = True
                             state.state = {}
                             state.etap = "askname"
@@ -1973,7 +2046,6 @@ def handle_dialog(req, res):
                     state.stateen["enemthird"] = knight1.thirdkill
                     if req["request"]["original_utterance"].lower() in ["продолжить приключение",
                                                                         "продолжи приключение"]:
-                        #    res["response"]["text"] = f"Вы наткнулись на врага"
                         res["response"]["text"] = f"Вы наткнулись на {state.stateen['enem']}\n" \
                                                   f"Параметры врага:\n" \
                                                   f"хп: {state.stateen['enem_hp']}\n" \
@@ -1996,7 +2068,7 @@ def handle_dialog(req, res):
                 elif state.fight_step == 3:
                     if req["request"]["original_utterance"].lower() in ["продолжить", "дальше"]:
                         if state.shi >= state.stateen["enemshi"]:
-                            res["response"]["text"] = "Вы пробили щит, тепрь бросьте кубик урона, чтобы это сделать " \
+                            res["response"]["text"] = "Вы пробили щит, теперь бросьте кубик урона, чтобы это сделать " \
                                                       "скажите 'нанести урон'"
                             state.fight_step = 4
                         else:
@@ -2007,16 +2079,16 @@ def handle_dialog(req, res):
                         res["response"]["text"] = "Напоминаю, чтобы продолжить скажите 'продолжить'"
                 elif state.fight_step == 4:
                     if req["request"]["original_utterance"].lower() in ["нанеси урон", "нанести урон"]:
-                        atc = random.randint(state.state["mina"], state.state["maxa"])
-                        state.stateen["enem_hp"] = state.stateen["enem_hp"] - atc
+                        state.atc = random.randint(state.state["mina"], state.state["maxa"])
+                        state.stateen["enem_hp"] = state.stateen["enem_hp"] - state.atc
                         res["response"][
-                            "text"] = f"тепрь скажите, какую атаку вы хотите использовать один два или три, \n" \
+                            "text"] = f"теперь скажите, какую атаку вы хотите использовать один два или три, \n" \
                                       f"чтобы посмотреть атаки, скажите 'способности рыцаря'"
                         state.fight_step = 5
                     else:
                         res["response"]["text"] = "Напоминаю, чтобы нанести урон скажите 'нанести урон'"
                 elif state.fight_step == 5:
-                    if req["request"]["original_utterance"].lower() in ["1", "первая"]:
+                    if req["request"]["original_utterance"].lower() in ["1", "первая", "один"]:
                         if state.stateen["enem_hp"] > 0:
                             res["response"][
                                 "text"] = f"Вы нанесли {state.atc} урона, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
@@ -2027,7 +2099,7 @@ def handle_dialog(req, res):
                             state.fights = 2
                             state.fight_step = 1
                             state.num.remove(n)
-                    elif req["request"]["original_utterance"].lower() in ["2", "вторая"]:
+                    elif req["request"]["original_utterance"].lower() in ["2", "вторая", "два"]:
                         if state.stateen["enem_hp"] > 0:
                             res["response"][
                                 "text"] = f"Вы нанесли {state.atc} урона, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
@@ -2038,7 +2110,7 @@ def handle_dialog(req, res):
                             state.fights = 2
                             state.fight_step = 1
                             state.num.remove(n)
-                    elif req["request"]["original_utterance"].lower() in ["3", "третья"]:
+                    elif req["request"]["original_utterance"].lower() in ["3", "третья", "три"]:
                         if state.stateen["enem_hp"] > 0:
                             res["response"][
                                 "text"] = f"Вы нанесли {state.atc} урона, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
@@ -2051,7 +2123,7 @@ def handle_dialog(req, res):
                             state.num.remove(n)
                     else:
                         res["response"]["text"] = f"скажите, какую атаку вы хотите использовать один два или три, \n" \
-                                                  f"чтобы посмотреть атаки, скажите 'способности мага'"
+                                                  f"чтобы посмотреть атаки, скажите 'способности рыцаря'"
 
                 elif state.fight_step == -1:
                     if req["request"]["original_utterance"].lower() in ["продолжить", "дальше"]:
@@ -2068,7 +2140,11 @@ def handle_dialog(req, res):
                             res["response"][
                                 "text"] = f"Враг выбросил {enem_atsh} и пробил ваш щит и нанёс вам {enem_atc} " \
                                           f"урона, и к сожалению вы погибли..." \
-                                          f" захотите пограть еще, я всегда тут"
+                                          f" захотите поиграть еще, я всегда тут"
+                            res["response"]["tts"] = f'<speaker audio="alice-sounds-game-loss-3.opus">'\
+                                                      f"Враг выбросил {enem_atsh} и пробил ваш щит и нанёс вам {enem_atc} " \
+                                                      f"урона, и к сожалению вы погибли..." \
+                                                      f" захотите поиграть еще, я всегда тут"
                             res['response']['end_session'] = True
                             state.state = {}
                             state.etap = "askname"
@@ -2097,7 +2173,6 @@ def handle_dialog(req, res):
                     state.stateen["enemsecond"] = knight0.secondkill
                     state.stateen["enemthird"] = knight0.thirdkill
                     if req["request"]["original_utterance"].lower() in ["начать приключение", "начни приключение"]:
-                        #    res["response"]["text"] = f"Вы наткнулись на врага"
                         res["response"]["text"] = f"Вы наткнулись на {state.stateen['enem']}\n" \
                                                   f"Параметры врага:\n" \
                                                   f"хп: {state.stateen['enem_hp']}\n" \
@@ -2120,7 +2195,7 @@ def handle_dialog(req, res):
                 elif state.fight_step == 3:
                     if req["request"]["original_utterance"].lower() in ["продолжить", "дальше"]:
                         if state.shi >= state.stateen["enemshi"]:
-                            res["response"]["text"] = "Вы пробили щит, тепрь бросьте кубик урона, чтобы это сделать " \
+                            res["response"]["text"] = "Вы пробили щит, теперь бросьте кубик урона, чтобы это сделать " \
                                                       "скажите 'нанести урон'"
                             state.fight_step = 4
                         else:
@@ -2131,16 +2206,16 @@ def handle_dialog(req, res):
                         res["response"]["text"] = "Напоминаю, чтобы продолжить скажите 'продолжить'"
                 elif state.fight_step == 4:
                     if req["request"]["original_utterance"].lower() in ["нанеси урон", "нанести урон"]:
-                        atc = random.randint(state.state["mina"], state.state["maxa"])
-                        state.stateen["enem_hp"] = state.stateen["enem_hp"] - atc
+                        state.atc = random.randint(state.state["mina"], state.state["maxa"])
+                        state.stateen["enem_hp"] = state.stateen["enem_hp"] - state.atc
                         res["response"][
-                            "text"] = f"тепрь скажите, какую атаку вы хотите использовать один два или три, \n" \
+                            "text"] = f"теперь скажите, какую атаку вы хотите использовать один два или три, \n" \
                                       f"чтобы посмотреть атаки, скажите 'способности рыцаря'"
                         state.fight_step = 5
                     else:
                         res["response"]["text"] = "Напоминаю, чтобы нанести урон скажите 'нанести урон'"
                 elif state.fight_step == 5:
-                    if req["request"]["original_utterance"].lower() in ["1", "первая"]:
+                    if req["request"]["original_utterance"].lower() in ["1", "первая", "один"]:
                         if state.stateen["enem_hp"] > 0:
                             res["response"][
                                 "text"] = f"Вы нанесли {state.atc} урона, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
@@ -2151,7 +2226,7 @@ def handle_dialog(req, res):
                             state.fights = 1
                             state.fight_step = 1
                             state.num.remove(n)
-                    elif req["request"]["original_utterance"].lower() in ["2", "вторая"]:
+                    elif req["request"]["original_utterance"].lower() in ["2", "вторая", "два"]:
                         if state.stateen["enem_hp"] > 0:
                             res["response"][
                                 "text"] = f"Вы нанесли {state.atc} урона, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
@@ -2162,7 +2237,7 @@ def handle_dialog(req, res):
                             state.fights = 1
                             state.fight_step = 1
                             state.num.remove(n)
-                    elif req["request"]["original_utterance"].lower() in ["3", "третья"]:
+                    elif req["request"]["original_utterance"].lower() in ["3", "третья", "три"]:
                         if state.stateen["enem_hp"] > 0:
                             res["response"][
                                 "text"] = f"Вы нанесли {state.atc} урона, готовьтесь к его атаке, чтобы продолжить скажите 'продолжить'"
@@ -2175,7 +2250,7 @@ def handle_dialog(req, res):
                             state.num.remove(n)
                     else:
                         res["response"]["text"] = f"скажите, какую атаку вы хотите использовать один два или три, \n" \
-                                                  f"чтобы посмотреть атаки, скажите 'способности мага'"
+                                                  f"чтобы посмотреть атаки, скажите 'способности рыцаря'"
 
                 elif state.fight_step == -1:
                     if req["request"]["original_utterance"].lower() in ["продолжить", "дальше"]:
@@ -2192,7 +2267,11 @@ def handle_dialog(req, res):
                             res["response"][
                                 "text"] = f"Враг выбросил {enem_atsh} и пробил ваш щит и нанёс вам {enem_atc} " \
                                           f"урона, и к сожалению вы погибли..." \
-                                          f" захотите пограть еще, я всегда тут"
+                                          f" захотите поиграть еще, я всегда тут"
+                            res["response"]["tts"] = f'<speaker audio="alice-sounds-game-loss-3.opus">'\
+                                                      f"Враг выбросил {enem_atsh} и пробил ваш щит и нанёс вам {enem_atc} " \
+                                                      f"урона, и к сожалению вы погибли..." \
+                                                      f" захотите поиграть еще, я всегда тут"
                             res['response']['end_session'] = True
                             state.state = {}
                             state.etap = "askname"
@@ -2211,18 +2290,19 @@ def handle_dialog(req, res):
     elif state.etap == 'begin':
         if req["request"]["original_utterance"].lower() in ["продолжить", "дальше"]:
             res["response"]["text"] = "Хорошо! Чтобы отправиться в путь скажите 'начать приключение', состояние игрока можно проверить командой профиль "
+            res["response"]["tts"] = '<speaker audio="alice-sounds-game-boot-1.opus"> Хорошо! Чтобы отправиться в путь ' \
+                                    'скажите "начать приключение", состояние игрока можно проверить командой профиль '
             state.etap = 'fight'
         else:
             res["response"]["text"] = "Напоминаю, чтобы продолжить скажите 'продолжить'"
-    # Профиль: res["response"]["text"] =
-    # кол-во пройденых этапов
-    #
 
     elif state.etap == 'askrole':
         role = req["request"]["original_utterance"]
         state.state["role"] = role
         if role == "эльф":
             res["response"]["text"] = "Отлично! вы меткий эльф из лесов. \n Чтобы пройти дальше, скажите 'продолжить'"
+            res["response"]["tts"] = '<speaker audio="alice-sounds-game-powerup-1.opus"> ' \
+                                     'Отлично! вы меткий эльф из лесов. \n Чтобы пройти дальше, скажите "продолжить"'
             state.etap = 'begin'
             state.state["hp"] = 12
             state.state["shield"] = 17
@@ -2230,6 +2310,8 @@ def handle_dialog(req, res):
             state.state["maxa"] = 6
         elif role == "рыцарь":
             res["response"]["text"] = "Отлично! вы бесстрашный воин королевства. \n Чтобы пройти дальше, скажите 'продолжить'"
+            res["response"]["tts"] = '<speaker audio="alice-sounds-game-powerup-1.opus"> ' \
+                                     'Отлично! вы бесстрашный воин королевства. \n Чтобы пройти дальше, скажите "продолжить"'
             state.etap = 'begin'
             state.state["hp"] = 13
             state.state["shield"] = 17
@@ -2237,6 +2319,8 @@ def handle_dialog(req, res):
             state.state["maxa"] = 5
         elif role == "маг":
             res["response"]["text"] = "Отлично! вы мудрый чародей башни. \n Чтобы пройти дальше, скажите 'продолжить'"
+            res["response"]["tts"] = '<speaker audio="alice-sounds-game-powerup-1.opus"> ' \
+                                     'Отлично! вы мудрый чародей башни. \n Чтобы пройти дальше, скажите "продолжить"'
             state.etap = 'begin'
             state.state["hp"] = 11
             state.state["shield"] = 18
@@ -2244,6 +2328,8 @@ def handle_dialog(req, res):
             state.state["maxa"] = 6
         elif role == "варвар":
             res["response"]["text"] = "Отлично! вы грозный варвар из гор. \n Чтобы пройти дальше, скажите 'продолжить'"
+            res["response"]["tts"] = '<speaker audio="alice-sounds-game-powerup-1.opus"> Отлично! вы грозный варвар из ' \
+                                     'гор. \n Чтобы пройти дальше, скажите "продолжить"'
             state.etap = 'begin'
             state.state["hp"] = 14
             state.state["shield"] = 16
@@ -2254,16 +2340,24 @@ def handle_dialog(req, res):
 
     elif state.etap == 'checkname':
         if req["request"]["original_utterance"].lower() in ["да", "правильно"]:
-            res["response"]["text"] = f'Приятно познокомиться, {state.state["name"]}. Теперь назовите персонажа, Для просмотра способномтей определённого персонажа' \
-                                      ' скажите "какие способности у ..."'
+            res["response"]["text"] = f'Приятно познокомиться, {state.state["name"]}. Теперь назовите персонажа, Для просмотра способностей определённого персонажа' \
+                          ' скажите "какие способности у ..."'
+            res["response"]["tts"] = f'<speaker audio="alice-sounds-game-boot-1.opus">'\
+                          f'Приятно познокомиться, {state.state["name"]}. Теперь назовите персонажа, Для просмотра способностей определённого персонажа' \
+                          ' скажите "какие способности у ..."'
             state.etap = 'askrole'
         elif req["request"]["original_utterance"].lower() in ["нет", "не правильно", "заново"]:
-            res["response"]["text"] = "Повторите имя, пожалуйста"
+            res["response"]["text"] = 'Повторите имя, пожалуйста'
+            res["response"]["tts"] = '<speaker audio="alice-sounds-game-boot-1.opus"> Повторите имя, пожалуйста'
             state.etap = 'askname'
+        else:
+            res["response"]["text"] = 'Так да или нет?'
 
     elif state.etap == 'askname':
         state.state["name"] = req["request"]["original_utterance"]
         res["response"]["text"] = f'Супер! Правильно ли я поняла, что вас зовут {state.state["name"]}?'
+        res["response"]["tts"] = f'<speaker audio="alice-sounds-game-boot-1.opus">'\
+                                 f'Супер! Правильно ли я поняла, что вас зовут {state.state["name"]}?'
         state.etap = 'checkname'
 
     res['user_state_update'] = state.to_dict()
@@ -2272,5 +2366,4 @@ def handle_dialog(req, res):
 if __name__ == '__main__':
     db_session.global_init("db/event.db")
     db_sess = db_session.create_session()
-    # ellf = db_sess.query(Elf).first()
     app.run()
